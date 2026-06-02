@@ -30,6 +30,14 @@
   let repeat = false;
   let lastPushed = null;    // last text written to now-playing.txt
 
+  /* URL options for running as an OBS audio source:
+       ?autoplay=1  start playing as soon as the library loads
+       ?shuffle=1   begin in shuffle mode  */
+  const params = new URLSearchParams(location.search);
+  const autoplay = params.get("autoplay") === "1";
+  let didAutoplay = false;
+  if (params.get("shuffle") === "1") { shuffle = true; shuffleBtn.classList.add("on"); }
+
   /* ---------- helpers ---------- */
   const fmt = (s) => {
     if (!s || !isFinite(s)) return "0:00";
@@ -232,6 +240,10 @@
     view = tracks.slice();
     current = -1;
     render();
+    if (autoplay && !didAutoplay && view.length) {
+      didAutoplay = true;
+      playIndex(shuffle ? Math.floor(Math.random() * view.length) : 0);
+    }
   }
   document.getElementById("refresh").addEventListener("click", load);
 

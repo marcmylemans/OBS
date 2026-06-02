@@ -203,8 +203,9 @@
     <h2 style="margin-top:26px">Now playing &amp; chat</h2>
     <div class="grid2">
       <ol>
-        <li><b>Now playing</b> auto-reads <code>now-playing.txt</code> next to the scenes. The bundled <a href="/player/" style="color:var(--sky-400)">🎵 Music Player</a> writes it for you - play a track and the chip updates within 5s and hides when paused/stopped. (Any external tool - Spotify/foobar2000/Snip, OBS "Output current song" - can also write that file.)</li>
-        <li>Prefer a fixed label? Use <code>?track=Artist - Title</code> in the source URL instead.</li>
+        <li><b>Now playing</b> updates live from the bundled <a href="/player/" style="color:var(--sky-400)">🎵 Music Player</a> (the chip shows on streaming scenes and hides when paused/stopped). The audio plays wherever the player is running - the scenes make no sound themselves.</li>
+        <li><b>Music in your stream/recording:</b> add the player as its own OBS <b>Browser</b> source at <code>/player/?autoplay=1</code> (append <code>&amp;shuffle=1</code> to shuffle), enable <i>Control audio via OBS</i>, and leave <i>Shutdown source when not visible</i> off so it keeps playing across scenes.</li>
+        <li>Prefer a fixed label instead of the player? Use <code>?track=Artist - Title</code> in the source URL.</li>
       </ol>
       <ol>
         <li><b>Chat</b> shows a branded frame; add your real chat as a <i>separate</i> transparent Browser source (StreamElements / nightbot / your YouTube–Twitch widget) positioned over the coordinates above.</li>

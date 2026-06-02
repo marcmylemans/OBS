@@ -159,8 +159,28 @@ isn't available.)
 - Embedded album art is shown in the player; the `OBS: …` badge in the top-right
   reflects exactly what's written to `now-playing.txt`.
 
+The audio plays wherever the player page is running, so the scenes themselves
+make no sound (they only show the Now Playing text).
+
+### Run the player as an OBS audio source
+
+To have music in your stream/recording without keeping a browser window open,
+add the player as its own audio source in OBS:
+
+1. Add a **Browser** source pointing at `http://HOST:8080/player/?autoplay=1`
+   (add `&shuffle=1` to start shuffled).
+2. Enable **Control audio via OBS** so it appears in the audio mixer.
+3. **Leave _Shutdown source when not visible_ off** for this one, and set its
+   Audio Monitoring to **Monitor and Output** (Advanced Audio Properties) so the
+   music stays in the mix across every scene.
+
+| Player param | Effect |
+| --- | --- |
+| `?autoplay=1` | Start playing as soon as the library loads (OBS allows autoplay; a normal browser tab still needs one click) |
+| `?shuffle=1` | Begin in shuffle mode |
+
 Any external tool (Spotify/foobar2000/Snip, OBS "Output current song") can write
-that same file instead - the player is just the bundled, no-config option.
+the `now-playing.txt` text instead - the player is just the bundled, no-config option.
 
 ## Stream Deck +
 
