@@ -174,6 +174,7 @@
 
   /* ---------- Live control channel (Server-Sent Events) ---------- */
   OBS.connectLive = function (onState) {
+    if (OBS.isDemo) return;                                                  // preview (e.g. control-room iframes) — don't hold a connection
     if (location.protocol === "file:" || typeof EventSource === "undefined") return; // local file: no server
     const open = () => {
       try {
