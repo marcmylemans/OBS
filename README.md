@@ -113,6 +113,18 @@ scene source instantly over Server-Sent Events:
 A URL that explicitly sets `?topic=` is treated as locked and won't be overwritten
 by live pushes, so you can pin a topic on one source while steering the rest.
 
+### On-screen QR code (streaming only)
+
+Pop a QR code on the streaming scenes for a link viewers can scan (Discord,
+socials, a sponsor, donations…). In the control room, enter a **URL** and a
+**description**, then hit **Show QR**; **Hide QR** removes it. It's pushed live
+over the same channel (and previewed in the cards), and it appears on the standby
+and live capture scenes only - never on the minimal recording scenes. The code is
+generated server-side as crisp SVG (`/api/qr`) so it scans well; it sits
+bottom-left on the rail screenshare (clear of the webcam) and bottom-right
+elsewhere. From a Stream Deck / Companion: `GET /api/cmd/qr?url=...&label=...` to
+show, `GET /api/cmd/qr/clear` to hide.
+
 ### Branding & theming
 
 Brand details live in **`config.json`** (no code edits): presenter name/role,
@@ -140,6 +152,7 @@ and refresh - no rebuild needed (mount it into the container to override, per
 | `?v=1\|2\|3` | standby | Standby layout (centered / editorial / panel) |
 | `?topic=...` | capture | On-screen topic lower-third |
 | `?track=Artist - Title` | capture | Fixed Now Playing label (overrides the file) |
+| `?qr=URL` `?qrlabel=...` | streaming | Show a QR code (with a description) - usually pushed live instead |
 | `?yt= &gh= &bs=` | all | Override social handles |
 | `?demo=1` | capture | Preview backdrop (never use in OBS) |
 
@@ -215,7 +228,8 @@ script are included too.
 | `GET/POST /api/state` | Read / push live scene state (topic, variant, countdown, track) |
 | `GET /api/events` | Server-Sent Events stream the scenes subscribe to |
 | `GET /api/config` · `GET /scenes/brand.js` | Brand/theme config (JSON / injected JS) |
-| `GET /api/cmd/...` | Stream Deck command shortcuts (topic, variant, countdown, player) - see [`streamdeck/`](streamdeck/README.md) |
+| `GET /api/qr?data=...` | QR code as SVG |
+| `GET /api/cmd/...` | Stream Deck command shortcuts (topic, variant, countdown, qr, player) - see [`streamdeck/`](streamdeck/README.md) |
 | `GET /healthz` | Health + connected-scene count |
 
 ---

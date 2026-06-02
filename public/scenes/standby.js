@@ -54,7 +54,8 @@ function buildStandby(cfg, v) {
       <div class="top">${brandmark}${clock}</div>
       ${mid}
     </div>
-    <div class="confighint">Configure via URL: ?v=1|2|3 · ?mins=10 or ?until=20:30 · ?demo=1</div>
+    <div class="qr-card br"><div class="qr-img-wrap"><img class="qr-img" alt=""/></div><div class="qr-label"></div></div>
+    <div class="confighint">Configure via URL: ?v=1|2|3 · ?mins=10 or ?until=20:30 · ?qr=URL · ?demo=1</div>
   `);
 
   OBS.boot();
@@ -88,5 +89,6 @@ function renderStandby(cfg) {
         OBS._cdCtl.set({ mode: s.countdown.mode, mins: s.countdown.mins, until: s.countdown.until, done: cfg.done });
       }
     }
+    if (typeof s.qr !== "undefined") OBS.setQR(s.qr);   // applied after any rebuild above
   });
 }

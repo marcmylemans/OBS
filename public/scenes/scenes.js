@@ -230,18 +230,25 @@ function renderScene(cfg) {
       ${bottomRight}`;
   }
 
-  stage.insertAdjacentHTML("beforeend", html +
-    `<div class="confighint">URL options: ?topic=… · ?track=Artist - Title (or edit now-playing.txt) · ?demo=1</div>`);
+  /* QR overlay: streaming scenes only (never on recording). Sits bottom-left
+     on the rail screenshare (clear of the webcam), bottom-right otherwise. */
+  const qrCard = live
+    ? `<div class="qr-card ${isShare && isRail ? "bl" : "br"}"><div class="qr-img-wrap"><img class="qr-img" alt=""/></div><div class="qr-label"></div></div>`
+    : "";
+
+  stage.insertAdjacentHTML("beforeend", html + qrCard +
+    `<div class="confighint">URL options: ?topic=… · ?track=Artist - Title (or edit now-playing.txt) · ?qr=URL · ?demo=1</div>`);
 
   OBS.boot();
   let np = null;
   if (showNow) np = setupNowPlaying();
 
-  /* Live control channel: update topic + now-playing as the control room /
+  /* Live control channel: update topic + now-playing + QR as the control room /
      player push changes (no source refresh needed). topic is an override -
      only applied when non-null, and never when pinned via ?topic=. */
   OBS.connectLive((s) => {
     if (!topicLocked && s.topic != null) OBS.setTopic(s.topic);
     if (np && !np.locked && s.track != null) np.set(s.track);
+    if (typeof s.qr !== "undefined") OBS.setQR(s.qr);
   });
 }

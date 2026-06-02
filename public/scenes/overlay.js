@@ -174,6 +174,31 @@
     document.querySelectorAll(".js-topic-wrap").forEach((w) => { w.style.display = t ? "" : "none"; });
   };
 
+  /* ---------- QR overlay ---------- */
+  /* qr = { url, label } to show, or null/empty to hide. Renders a crisp SVG
+     QR from the server and an optional description beneath it. */
+  OBS.setQR = function (qr) {
+    const card = document.querySelector(".qr-card");
+    if (!card) return;
+    const url = qr && qr.url ? String(qr.url).trim() : "";
+    const label = qr && qr.label ? String(qr.label).trim() : "";
+    if (url) {
+      card.querySelector(".qr-img").src = "/api/qr?data=" + encodeURIComponent(url);
+      const lab = card.querySelector(".qr-label");
+      lab.innerHTML = label ? `<span class="k">Scan</span>${label.replace(/[<>&]/g, "")}` : "";
+      lab.style.display = label ? "" : "none";
+      card.classList.add("show");
+    } else {
+      card.classList.remove("show");
+    }
+  };
+
+  /* Initial QR from ?qr= / ?qrlabel= (used by control-room previews + static use). */
+  OBS.applyQR = function () {
+    const url = OBS.q("qr", null);
+    if (url != null) OBS.setQR({ url, label: OBS.q("qrlabel", "") });
+  };
+
   /* ---------- Variant (?v=1|2|3) ---------- */
   OBS.variant = parseInt(OBS.q("v", "1"), 10) || 1;
 
@@ -204,6 +229,7 @@
     const stage = document.querySelector(".stage");
     if (stage && OBS.isDemo) stage.dataset.demo = "1";
     OBS.applyTopic();
+    OBS.applyQR();
     document.querySelectorAll(".clock").forEach(OBS.startClock);
   };
 

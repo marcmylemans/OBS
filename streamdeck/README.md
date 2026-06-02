@@ -63,6 +63,8 @@ IP), port `8080` by default.
 | Countdown set minutes | `http://HOST:8080/api/cmd/countdown?mins=10` |
 | Countdown to clock time | `http://HOST:8080/api/cmd/countdown?until=20:30` |
 | Countdown start/restart | `http://HOST:8080/api/cmd/countdown/start` |
+| Show QR code | `http://HOST:8080/api/cmd/qr?url=https://discord.gg/xxx&label=Join%20the%20Discord` |
+| Hide QR code | `http://HOST:8080/api/cmd/qr/clear` |
 | Music play/pause | `http://HOST:8080/api/cmd/player/playpause` |
 | Music next / prev | `http://HOST:8080/api/cmd/player/next` · `/prev` |
 | Music volume ± | `http://HOST:8080/api/cmd/player/volume?delta=-2` |

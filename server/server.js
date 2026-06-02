@@ -21,6 +21,7 @@ import path from "node:path";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import QRCode from "qrcode";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -86,6 +87,7 @@ const state = {
   track: "",
   variant: null,
   countdown: null,
+  qr: null,          // { url, label } when shown, null when hidden
   rev: 0
 };
 try { state.track = fs.readFileSync(NOW_PLAYING_FILE, "utf8").trim(); } catch {}
@@ -129,6 +131,13 @@ async function updateState(patch) {
     state.track = patch.track.trim();
     await writeNowPlaying(state.track);
     changed = true;
+  }
+  if (typeof patch.qr !== "undefined") {
+    let qr = null;
+    if (patch.qr && typeof patch.qr === "object" && typeof patch.qr.url === "string" && patch.qr.url.trim()) {
+      qr = { url: patch.qr.url.trim(), label: typeof patch.qr.label === "string" ? patch.qr.label.trim() : "" };
+    }
+    if (JSON.stringify(qr) !== JSON.stringify(state.qr)) { state.qr = qr; changed = true; }
   }
   if (changed) { state.rev++; broadcast(); }
   return changed;
@@ -345,6 +354,35 @@ app.get("/api/cmd/player/:action", (req, res) => {
   }
   broadcastCommand(cmd);
   res.json({ ok: true, sent: cmd, listeners: sseClients.size });
+});
+
+/* QR code as crisp SVG (so it scales sharp and scans well over a stream). */
+app.get("/api/qr", async (req, res) => {
+  const data = String(req.query.data || "");
+  if (!data || data.length > 2000) return res.status(400).send("bad data");
+  try {
+    const svg = await QRCode.toString(data, {
+      type: "svg",
+      errorCorrectionLevel: "M",
+      margin: 1,
+      color: { dark: "#0b1120", light: "#ffffff" }
+    });
+    res.set("Content-Type", "image/svg+xml");
+    res.set("Cache-Control", "public, max-age=86400");
+    res.send(svg);
+  } catch {
+    res.status(400).send("qr error");
+  }
+});
+
+/* --- QR overlay (pushed to streaming scenes via live state) --- */
+app.get("/api/cmd/qr", async (req, res) => {
+  await updateState({ qr: { url: String(req.query.url || ""), label: String(req.query.label || "") } });
+  res.json({ ok: true, qr: state.qr });
+});
+app.get("/api/cmd/qr/clear", async (_req, res) => {
+  await updateState({ qr: null });
+  res.json({ ok: true, qr: state.qr });
 });
 
 /* ---------- media streaming (Range support for seeking) ---------- */

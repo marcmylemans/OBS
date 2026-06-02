@@ -178,6 +178,14 @@
         <button data-live="1">On</button>
       </div>
     </div>
+    <div class="field" style="flex-basis:100%">
+      <label>On-screen QR code (streaming only)</label>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center">
+        <input type="text" id="qrUrl" placeholder="https://link-to-encode.example" style="flex:2; min-width:230px"/>
+        <input type="text" id="qrLabel" placeholder="Description (e.g. Join the Discord)" style="flex:1; min-width:200px"/>
+        <button class="btn" id="qrToggle" type="button">Show QR</button>
+      </div>
+    </div>
     <p class="hint" id="liveHint">Changes update the previews live and bake into each scene's <b>Copy URL</b>. Turn on <b>Live push</b> to update already-open OBS sources instantly - topic, standby layout and countdown - without re-copying URLs. Webcam frame sits bottom-right at <b>1412, 773 · 460×259</b>.</p>
   </div>
 
@@ -234,7 +242,12 @@ const SCENES = {
   ]
 };
 
-const cfg = { mode: "mins", mins: 10, until: "20:30", topic: "", track: "", v: 1, restart: false };
+const cfg = { mode: "mins", mins: 10, until: "20:30", topic: "", track: "", v: 1, restart: false, qrShow: false, qrUrl: "", qrLabel: "" };
+
+/* QR is live-only (pushed, not baked into Copy URL); included in previews so you can see it. */
+function qrParam() {
+  return (cfg.qrShow && cfg.qrUrl) ? "&qr=" + encodeURIComponent(cfg.qrUrl) + "&qrlabel=" + encodeURIComponent(cfg.qrLabel || "") : "";
+}
 
 function baseQS(standby) {
   const p = new URLSearchParams();
@@ -251,7 +264,7 @@ function baseQS(standby) {
 function srcFor(sc) {        // for the preview iframe (adds demo backdrop on transparent)
   const q = baseQS(sc.standby);
   const pre = sc.transparent ? ("demo=1" + (q ? "&" : "")) : "";
-  return encodeURI(sc.f) + "?" + pre + q + "&_=" + Date.now();
+  return encodeURI(sc.f) + "?" + pre + q + qrParam() + "&_=" + Date.now();
 }
 function urlFor(sc) {        // for OBS - absolute, copy-paste ready
   const q = baseQS(sc.standby);
@@ -298,7 +311,7 @@ function render() {
       const iframe = card.querySelector("iframe");
       iframe.src = srcFor(sc);
       const open = card.querySelector("[data-open]");
-      open.href = encodeURI(sc.f) + "?" + (sc.transparent ? "demo=1&" : "") + baseQS(sc.standby);
+      open.href = encodeURI(sc.f) + "?" + (sc.transparent ? "demo=1&" : "") + baseQS(sc.standby) + qrParam();
       card.querySelector("[data-url]").textContent = urlFor(sc);
       card.querySelector("[data-copy]").addEventListener("click", () => {
         navigator.clipboard.writeText(urlFor(sc)).then(showToast);
@@ -318,7 +331,7 @@ function refreshAll() {
     card._iframe.src = srcFor(card._sc);
     card.querySelector("[data-url]").textContent = urlFor(card._sc);
     const open = card.querySelector("[data-open]");
-    open.href = encodeURI(card._sc.f) + "?" + (card._sc.transparent ? "demo=1&" : "") + baseQS(card._sc.standby);
+    open.href = encodeURI(card._sc.f) + "?" + (card._sc.transparent ? "demo=1&" : "") + baseQS(card._sc.standby) + qrParam();
   });
   pushState();
 }
@@ -390,6 +403,34 @@ document.getElementById("segLive").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return;
   setLivePush(b.dataset.live === "1");
 });
+
+/* ---- On-screen QR code (live to OBS + shown in previews) ---- */
+const qrUrlEl = document.getElementById("qrUrl");
+const qrLabelEl = document.getElementById("qrLabel");
+const qrToggleEl = document.getElementById("qrToggle");
+function pushQR() {
+  if (cfg.qrShow && cfg.qrUrl) {
+    fetch("/api/cmd/qr?url=" + encodeURIComponent(cfg.qrUrl) + "&label=" + encodeURIComponent(cfg.qrLabel || "")).catch(() => {});
+  } else {
+    fetch("/api/cmd/qr/clear").catch(() => {});
+  }
+}
+function setQRShown(show) {
+  cfg.qrUrl = qrUrlEl.value.trim();
+  cfg.qrLabel = qrLabelEl.value.trim();
+  cfg.qrShow = show && !!cfg.qrUrl;
+  qrToggleEl.textContent = cfg.qrShow ? "Hide QR" : "Show QR";
+  qrToggleEl.classList.toggle("primary", cfg.qrShow);
+  pushQR();
+  refreshAll();   // previews reflect the QR (Copy URL stays clean - QR is live-only)
+}
+qrToggleEl.addEventListener("click", () => setQRShown(!cfg.qrShow));
+[qrUrlEl, qrLabelEl].forEach((el) => el.addEventListener("input", () => {
+  if (!cfg.qrShow) return;
+  cfg.qrUrl = qrUrlEl.value.trim(); cfg.qrLabel = qrLabelEl.value.trim();
+  if (!cfg.qrUrl) { setQRShown(false); return; }
+  pushQR(); debounceRefresh();
+}));
 
 render();
 </script>
