@@ -144,6 +144,14 @@ fs.watchFile(NOW_PLAYING_FILE, { interval: 2000 }, async () => {
 /* ================================================================
    MUSIC HELPERS
    ================================================================ */
+/* Resolve a promise but give up after `ms` so one unreadable/huge file
+   can't hang the whole /api/tracks scan. */
+function withTimeout(promise, ms, fallback) {
+  let t;
+  const timeout = new Promise((resolve) => { t = setTimeout(() => resolve(fallback), ms); });
+  return Promise.race([promise.then((v) => { clearTimeout(t); return v; }, () => { clearTimeout(t); return fallback; }), timeout]);
+}
+
 function safeMusicPath(rel) {
   const decoded = decodeURIComponent(rel || "");
   const full = path.resolve(MUSIC_DIR, decoded);
@@ -236,15 +244,18 @@ app.get("/api/tracks", async (_req, res) => {
         duration: 0,
         hasCover: false
       };
-      try {
-        const { common, format } = await parseFile(path.join(MUSIC_DIR, rel), { duration: true });
+      const meta = await withTimeout(
+        parseFile(path.join(MUSIC_DIR, rel), { duration: true }),
+        5000,
+        null
+      );
+      if (meta) {
+        const { common, format } = meta;
         if (common.title) t.title = common.title;
         if (common.artist) t.artist = common.artist;
         if (common.album) t.album = common.album;
         if (format.duration) t.duration = Math.round(format.duration);
         t.hasCover = !!(common.picture && common.picture.length);
-      } catch {
-        /* unreadable tags — keep filename-derived fallback */
       }
       return t;
     })

@@ -175,14 +175,20 @@
   /* ---------- Live control channel (Server-Sent Events) ---------- */
   OBS.connectLive = function (onState) {
     if (location.protocol === "file:" || typeof EventSource === "undefined") return; // local file: no server
-    try {
-      const es = new EventSource("/api/events");
-      es.addEventListener("state", (e) => {
-        let s; try { s = JSON.parse(e.data); } catch (_) { return; }
-        try { onState(s); } catch (_) {}
-      });
-      OBS._es = es;
-    } catch (e) { /* not served by our server — stay static */ }
+    const open = () => {
+      try {
+        const es = new EventSource("/api/events");
+        es.addEventListener("state", (e) => {
+          let s; try { s = JSON.parse(e.data); } catch (_) { return; }
+          try { onState(s); } catch (_) {}
+        });
+        OBS._es = es;
+      } catch (e) { /* not served by our server — stay static */ }
+    };
+    /* Open after `load` so the SSE connection doesn't pin the browser/OBS
+       tab in a perpetual "loading" state. */
+    if (document.readyState === "complete") setTimeout(open, 0);
+    else window.addEventListener("load", () => setTimeout(open, 0));
   };
 
   /* ---------- Boot ---------- */

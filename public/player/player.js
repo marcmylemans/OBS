@@ -190,12 +190,17 @@
         break;
     }
   }
-  if (typeof EventSource !== "undefined") {
+  function openCommandStream() {
+    if (typeof EventSource === "undefined") return;
     try {
       const es = new EventSource("/api/events");
       es.addEventListener("command", (e) => { try { applyCommand(JSON.parse(e.data)); } catch (_) {} });
     } catch (_) {}
   }
+  /* Open the SSE stream only after `load` — an SSE connection opened during
+     page load keeps the browser tab's loading spinner running indefinitely. */
+  if (document.readyState === "complete") setTimeout(openCommandStream, 0);
+  else window.addEventListener("load", () => setTimeout(openCommandStream, 0));
 
   /* keyboard: space = play/pause, arrows = prev/next */
   document.addEventListener("keydown", (e) => {
