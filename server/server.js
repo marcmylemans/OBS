@@ -8,6 +8,12 @@
      ID3 metadata, streams audio, and extracts embedded cover art.
    - Writes the currently playing track to the scenes' now-playing.txt
      so the OBS "Now playing" chip updates live.
+   - Live control: a shared scene state (topic / track / countdown /
+     standby variant) pushed to every open scene over Server-Sent
+     Events, so the control room updates OBS instantly without
+     re-copying URLs or refreshing sources.
+   - Brand config: name / handles / accent are read from config.json
+     (CONFIG_FILE) and served to the scenes, so the pack is themeable.
    ================================================================ */
 import express from "express";
 import { parseFile } from "music-metadata";
@@ -24,15 +30,114 @@ const MUSIC_DIR = path.resolve(process.env.MUSIC_DIR || "/music");
 const SCENES_DIR = path.resolve(process.env.SCENES_DIR || path.join(ROOT, "public", "scenes"));
 const PLAYER_DIR = path.join(ROOT, "public", "player");
 const NOW_PLAYING_FILE = path.join(SCENES_DIR, "now-playing.txt");
+const CONFIG_FILE = path.resolve(process.env.CONFIG_FILE || path.join(ROOT, "config.json"));
 
 const AUDIO_EXT = new Set([".mp3", ".m4a", ".aac", ".flac", ".ogg", ".oga", ".opus", ".wav", ".webm"]);
 
 const app = express();
 app.use(express.json());
 
-/* ---------- helpers ---------- */
+/* ================================================================
+   BRAND CONFIG
+   ================================================================ */
+const DEFAULT_BRAND = {
+  brandName: "Mylemans Online",
+  tagline: "Homelab · Automation",
+  standbyTagline: "Homelab · Windows Server · Automation",
+  site: "mylemans.online",
+  presenter: { name: "Marc Mylemans", role: "Systems Engineer · Mylemans Online" },
+  handles: { youtube: "@mylemansonline", github: "mylemansonline", bluesky: "mylemans.online" },
+  accent: { from: "#2563eb", to: "#38bdf8" }
+};
 
-/* Resolve a client-supplied relative path safely inside MUSIC_DIR. */
+function deepMerge(base, over) {
+  const out = Array.isArray(base) ? base.slice() : { ...base };
+  for (const k of Object.keys(over || {})) {
+    if (over[k] && typeof over[k] === "object" && !Array.isArray(over[k]) && typeof base[k] === "object") {
+      out[k] = deepMerge(base[k], over[k]);
+    } else if (over[k] !== undefined) {
+      out[k] = over[k];
+    }
+  }
+  return out;
+}
+
+/* Re-read config.json on each request so edits apply without a restart. */
+function loadBrand() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8"));
+    return deepMerge(DEFAULT_BRAND, raw);
+  } catch {
+    return DEFAULT_BRAND;
+  }
+}
+
+/* ================================================================
+   LIVE SCENE STATE  (broadcast over SSE)
+
+   topic / variant / countdown are *overrides*: null means "no opinion —
+   the scene keeps its own URL/baked value". They only become non-null when
+   the control room actively pushes them (Live push on), so connecting
+   scenes are never clobbered by defaults. track is always a string
+   ("" = nothing playing).
+   ================================================================ */
+const state = {
+  topic: null,
+  track: "",
+  variant: null,
+  countdown: null,
+  rev: 0
+};
+try { state.track = fs.readFileSync(NOW_PLAYING_FILE, "utf8").trim(); } catch {}
+
+const sseClients = new Set();
+
+function broadcast() {
+  const payload = `event: state\ndata: ${JSON.stringify(state)}\n\n`;
+  for (const res of sseClients) {
+    try { res.write(payload); } catch { /* dropped on next close */ }
+  }
+}
+
+async function writeNowPlaying(text) {
+  await fsp.mkdir(SCENES_DIR, { recursive: true });
+  await fsp.writeFile(NOW_PLAYING_FILE, text ? text + "\n" : "");
+}
+
+/* Apply a partial update to the shared state and notify scenes. */
+async function updateState(patch) {
+  let changed = false;
+  if (typeof patch.topic === "string" && patch.topic.trim() !== state.topic) {
+    state.topic = patch.topic.trim();
+    changed = true;
+  }
+  if (typeof patch.variant !== "undefined" && patch.variant !== null) {
+    const v = Math.min(3, Math.max(1, parseInt(patch.variant, 10) || 1));
+    if (v !== state.variant) { state.variant = v; changed = true; }
+  }
+  if (patch.countdown && typeof patch.countdown === "object") {
+    const c = { ...(state.countdown || {}), ...patch.countdown };
+    if (JSON.stringify(c) !== JSON.stringify(state.countdown)) { state.countdown = c; changed = true; }
+  }
+  if (typeof patch.track === "string" && patch.track.trim() !== state.track) {
+    state.track = patch.track.trim();
+    await writeNowPlaying(state.track);
+    changed = true;
+  }
+  if (changed) { state.rev++; broadcast(); }
+  return changed;
+}
+
+/* Fold external now-playing.txt edits (other tools) into the live state. */
+fs.watchFile(NOW_PLAYING_FILE, { interval: 2000 }, async () => {
+  let text = "";
+  try { text = (await fsp.readFile(NOW_PLAYING_FILE, "utf8")).trim(); } catch {}
+  if (text !== state.track) { state.track = text; state.rev++; broadcast(); }
+});
+
+/* ================================================================
+   MUSIC HELPERS
+   ================================================================ */
 function safeMusicPath(rel) {
   const decoded = decodeURIComponent(rel || "");
   const full = path.resolve(MUSIC_DIR, decoded);
@@ -40,7 +145,6 @@ function safeMusicPath(rel) {
   return full;
 }
 
-/* Recursively walk MUSIC_DIR for audio files (paths relative to MUSIC_DIR). */
 async function walkMusic(dir = MUSIC_DIR, base = MUSIC_DIR, out = []) {
   let entries;
   try {
@@ -60,7 +164,6 @@ async function walkMusic(dir = MUSIC_DIR, base = MUSIC_DIR, out = []) {
   return out;
 }
 
-/* Derive "Artist — Title" from filename when tags are missing. */
 function fromFilename(rel) {
   const name = path.basename(rel, path.extname(rel)).replace(/_/g, " ").trim();
   const m = name.match(/^\s*(.+?)\s*[-–—]\s*(.+?)\s*$/);
@@ -68,9 +171,50 @@ function fromFilename(rel) {
   return { artist: "", title: name };
 }
 
-/* ---------- API ---------- */
+/* ================================================================
+   CONFIG ROUTES  (registered before static so they win)
+   ================================================================ */
+app.get("/api/config", (_req, res) => res.json(loadBrand()));
 
-/* List all tracks with metadata. */
+/* Injected into every scene as window.OBS_BRAND before overlay.js. */
+app.get("/scenes/brand.js", (_req, res) => {
+  res.type("application/javascript").set("Cache-Control", "no-store");
+  res.send(`window.OBS_BRAND = ${JSON.stringify(loadBrand())};`);
+});
+
+/* ================================================================
+   LIVE STATE ROUTES
+   ================================================================ */
+app.get("/api/state", (_req, res) => res.json(state));
+
+app.post("/api/state", async (req, res) => {
+  try {
+    const changed = await updateState(req.body || {});
+    res.json({ ok: true, changed, state });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
+/* Server-Sent Events stream: scenes subscribe to receive live state. */
+app.get("/api/events", (req, res) => {
+  res.set({
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no"
+  });
+  res.flushHeaders?.();
+  res.write(`retry: 3000\n`);
+  res.write(`event: state\ndata: ${JSON.stringify(state)}\n\n`);
+  sseClients.add(res);
+  const hb = setInterval(() => { try { res.write(": ping\n\n"); } catch {} }, 25000);
+  req.on("close", () => { clearInterval(hb); sseClients.delete(res); });
+});
+
+/* ================================================================
+   MUSIC API
+   ================================================================ */
 app.get("/api/tracks", async (_req, res) => {
   const rels = await walkMusic();
   rels.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
@@ -102,7 +246,6 @@ app.get("/api/tracks", async (_req, res) => {
   res.json({ musicDir: MUSIC_DIR, count: tracks.length, tracks });
 });
 
-/* Embedded cover art for a track (falls back to 404 → player shows placeholder). */
 app.get("/api/cover", async (req, res) => {
   const full = safeMusicPath(req.query.path);
   if (!full || !fs.existsSync(full)) return res.sendStatus(404);
@@ -118,19 +261,14 @@ app.get("/api/cover", async (req, res) => {
   }
 });
 
-/* Read / write the now-playing.txt that the OBS scenes poll. */
-app.get("/api/now-playing", async (_req, res) => {
-  let text = "";
-  try { text = (await fsp.readFile(NOW_PLAYING_FILE, "utf8")).trim(); } catch {}
-  res.json({ text });
-});
+/* now-playing.txt convenience endpoints (kept for compatibility). */
+app.get("/api/now-playing", (_req, res) => res.json({ text: state.track }));
 
 app.post("/api/now-playing", async (req, res) => {
-  const text = typeof req.body?.text === "string" ? req.body.text.trim() : "";
+  const text = typeof req.body?.text === "string" ? req.body.text : "";
   try {
-    await fsp.mkdir(SCENES_DIR, { recursive: true });
-    await fsp.writeFile(NOW_PLAYING_FILE, text ? text + "\n" : "");
-    res.json({ ok: true, text });
+    await updateState({ track: text });
+    res.json({ ok: true, text: state.track });
   } catch (err) {
     res.status(500).json({ ok: false, error: String(err) });
   }
@@ -143,6 +281,8 @@ app.use("/media", express.static(MUSIC_DIR, { acceptRanges: true, fallthrough: f
 app.use("/scenes", express.static(SCENES_DIR, { extensions: ["html"] }));
 app.use("/player", express.static(PLAYER_DIR, { extensions: ["html"] }));
 
+app.get("/healthz", (_req, res) => res.json({ ok: true, clients: sseClients.size, rev: state.rev }));
+
 /* Landing page → control room. */
 app.get("/", (_req, res) => res.redirect("/scenes/"));
 
@@ -151,5 +291,6 @@ app.listen(PORT, () => {
   console.log(`  Control room : http://localhost:${PORT}/scenes/`);
   console.log(`  Music player : http://localhost:${PORT}/player/`);
   console.log(`  Music folder : ${MUSIC_DIR}${fs.existsSync(MUSIC_DIR) ? "" : "  (not found — mount a volume here)"}`);
+  console.log(`  Config file  : ${CONFIG_FILE}${fs.existsSync(CONFIG_FILE) ? "" : "  (using built-in defaults)"}`);
   console.log(`  now-playing  : ${NOW_PLAYING_FILE}`);
 });

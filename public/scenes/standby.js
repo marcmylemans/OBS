@@ -1,16 +1,19 @@
 /* ================================================================
    Standby renderer — builds the active variant for a standby scene.
    Usage:  renderStandby({ eyebrow, title, subtext, countdown, done, mins });
+   The live control channel can switch variant and reset the countdown
+   without an OBS source refresh.
    ================================================================ */
-function renderStandby(cfg) {
-  const v = OBS.variant;                       // 1 | 2 | 3
+function buildStandby(cfg, v) {
   const stage = document.querySelector(".stage");
-  stage.classList.add("v" + v, "filled");
+  stage.innerHTML = "";
+  stage.className = "stage v" + v + " filled";
 
+  const brand = OBS.brand;
   const brandmark = `
     <div class="brandmark">
-      <img src="assets/logo-dark.png" alt="Mylemans Online"/>
-      <div class="wm"><b>Mylemans Online</b><span>Homelab · Windows Server · Automation</span></div>
+      <img src="assets/logo-dark.png" alt="${brand.brandName}"/>
+      <div class="wm"><b>${brand.brandName}</b><span>${brand.standbyTagline}</span></div>
     </div>`;
 
   const clock = `<div class="clock"><span class="dot"></span><span data-t>00:00</span></div>`;
@@ -51,7 +54,7 @@ function renderStandby(cfg) {
       <div class="top">${brandmark}${clock}</div>
       ${mid}
     </div>
-    <div class="confighint">Configure via URL: ?v=1|2|3 · ?mins=10 or ?until=20:30 · ?topic=… · ?demo=1</div>
+    <div class="confighint">Configure via URL: ?v=1|2|3 · ?mins=10 or ?until=20:30 · ?demo=1</div>
   `);
 
   OBS.boot();
@@ -60,4 +63,30 @@ function renderStandby(cfg) {
       scene: cfg.scene, mins: cfg.mins, done: cfg.done
     });
   }
+}
+
+function renderStandby(cfg) {
+  buildStandby(cfg, OBS.variant);
+
+  /* A baked ?v= pins the layout; live pushes won't override it. */
+  const variantLocked = OBS.q("v", null) != null;
+  let lastCd = null;
+
+  /* Live control: switch standby layout and reset the countdown on the fly.
+     variant/countdown are overrides — only applied when non-null, and the
+     countdown is only reset when it actually changes (so a topic edit in the
+     control room doesn't keep restarting the timer). */
+  OBS.connectLive((s) => {
+    if (!variantLocked && s.variant != null && s.variant !== OBS.variant) {
+      OBS.variant = s.variant;
+      buildStandby(cfg, OBS.variant);     // rebuild; countdown resumes via localStorage
+    }
+    if (cfg.countdown && s.countdown != null && OBS._cdCtl) {
+      const key = JSON.stringify(s.countdown);
+      if (key !== lastCd) {
+        lastCd = key;
+        OBS._cdCtl.set({ mode: s.countdown.mode, mins: s.countdown.mins, until: s.countdown.until, done: cfg.done });
+      }
+    }
+  });
 }

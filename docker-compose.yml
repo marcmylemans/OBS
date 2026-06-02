@@ -9,6 +9,8 @@ services:
       # Map your music library into the container (read-only).
       # Change the left side to wherever your music lives.
       - ./music:/music:ro
+      # Override the brand/theme without rebuilding (optional).
+      - ./config.json:/app/config.json:ro
     environment:
       - PORT=8080
       - MUSIC_DIR=/music

@@ -9,6 +9,32 @@
   OBS.q = (k, d) => (Q.has(k) ? Q.get(k) : d);
   OBS.isDemo = Q.get("demo") === "1";
 
+  /* ---------- Brand config (window.OBS_BRAND from /scenes/brand.js) ---------- */
+  const DEF_BRAND = {
+    brandName: "Mylemans Online",
+    tagline: "Homelab · Automation",
+    standbyTagline: "Homelab · Windows Server · Automation",
+    site: "mylemans.online",
+    presenter: { name: "Marc Mylemans", role: "Systems Engineer · Mylemans Online" },
+    handles: { youtube: "@mylemansonline", github: "mylemansonline", bluesky: "mylemans.online" },
+    accent: { from: "#2563eb", to: "#38bdf8" }
+  };
+  const B = (typeof window !== "undefined" && window.OBS_BRAND) || {};
+  OBS.brand = {
+    ...DEF_BRAND, ...B,
+    presenter: { ...DEF_BRAND.presenter, ...(B.presenter || {}) },
+    handles: { ...DEF_BRAND.handles, ...(B.handles || {}) },
+    accent: { ...DEF_BRAND.accent, ...(B.accent || {}) }
+  };
+
+  function applyAccent() {
+    const a = OBS.brand.accent || {};
+    const r = document.documentElement.style;
+    if (a.from) { r.setProperty("--blue-600", a.from); r.setProperty("--blue-500", a.from); r.setProperty("--blue-400", a.to || a.from); }
+    if (a.to) r.setProperty("--sky-400", a.to);
+    if (a.from && a.to) r.setProperty("--grad-primary", `linear-gradient(135deg, ${a.from}, ${a.to})`);
+  }
+
   /* ---------- Scale the 1920×1080 stage to the viewport ---------- */
   function fit() {
     const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
@@ -24,11 +50,11 @@
     bluesky: '<svg viewBox="0 0 600 600"><path d="M300 0c83 0 150 67 150 150s-67 150-150 150S150 233 150 150 217 0 300 0zM78 522c-17-19-25-44-25-75 0-61 51-113 113-113h268c62 0 113 52 113 113 0 31-8 56-25 75-18 20-41 30-69 30H147c-28 0-51-10-69-30z"/></svg>'
   };
 
-  /* default handles (overridable via URL ?yt= &gh= &bs= ) */
+  /* default handles from brand config (overridable via URL ?yt= &gh= &bs= ) */
   OBS.handles = {
-    youtube: OBS.q("yt", "@mylemansonline"),
-    github:  OBS.q("gh", "mylemansonline"),
-    bluesky: OBS.q("bs", "mylemans.online")
+    youtube: OBS.q("yt", OBS.brand.handles.youtube),
+    github:  OBS.q("gh", OBS.brand.handles.github),
+    bluesky: OBS.q("bs", OBS.brand.handles.bluesky)
   };
 
   OBS.socialChips = function (which) {
@@ -59,39 +85,51 @@
        ?until=HH:MM       next occurrence of that wall-clock time
        ?mins=N            N minutes from first load (persisted per scene)
      Optional ?done=Text  shown when it hits zero (default "Starting now")
+     Returns a controller; OBS._cdCtl.set({mode,mins,until,done}) restarts it
+     live (used by the live control channel).
   */
   OBS.startCountdown = function (el, opts) {
     opts = opts || {};
     const sceneKey = "obs-cd-" + (opts.scene || location.pathname);
-    const doneText = OBS.q("done", opts.done || "Starting now");
+    let doneText = OBS.q("done", opts.done || "Starting now");
+    let target;
 
-    function resolveTarget() {
-      const to = OBS.q("to", null);
-      if (to) { const t = Date.parse(to); if (!isNaN(t)) return t; }
+    function persist(mins, tgt) {
+      try { localStorage.setItem(sceneKey, JSON.stringify({ mins, target: tgt })); } catch (e) {}
+    }
 
-      const until = OBS.q("until", null);
-      if (until && /^\d{1,2}:\d{2}$/.test(until)) {
-        const [h, m] = until.split(":").map(Number);
-        const t = new Date();
-        t.setHours(h, m, 0, 0);
+    /* Compute a target from a {mode,mins,until} config.
+       fresh=true forces a new countdown (live reset); otherwise an
+       in-progress countdown is resumed from localStorage. */
+    function fromOpts(o, fresh) {
+      if (o.done) doneText = o.done;
+      if (o.mode === "until" && o.until && /^\d{1,2}:\d{2}$/.test(o.until)) {
+        const [h, m] = o.until.split(":").map(Number);
+        const t = new Date(); t.setHours(h, m, 0, 0);
         if (t.getTime() <= Date.now()) t.setDate(t.getDate() + 1);
         return t.getTime();
       }
-
-      const mins = parseFloat(OBS.q("mins", opts.mins != null ? opts.mins : "10"));
-      // persist so an OBS source refresh continues the same countdown
-      try {
-        const saved = JSON.parse(localStorage.getItem(sceneKey) || "null");
-        if (saved && saved.mins === mins && saved.target > Date.now() - 2000) return saved.target;
-        const target = Date.now() + mins * 60 * 1000;
-        localStorage.setItem(sceneKey, JSON.stringify({ mins, target }));
-        return target;
-      } catch (e) {
-        return Date.now() + mins * 60 * 1000;
+      const mins = parseFloat(o.mins != null ? o.mins : 10);
+      if (!fresh) {
+        try {
+          const s = JSON.parse(localStorage.getItem(sceneKey) || "null");
+          if (s && s.mins === mins && s.target > Date.now() - 2000) return s.target;
+        } catch (e) {}
       }
+      const tgt = Date.now() + mins * 60 * 1000;
+      persist(mins, tgt);
+      return tgt;
     }
 
-    let target = resolveTarget();
+    function initialTarget() {
+      const to = OBS.q("to", null);
+      if (to) { const t = Date.parse(to); if (!isNaN(t)) return t; }
+      const until = OBS.q("until", null);
+      if (until) return fromOpts({ mode: "until", until }, false);
+      return fromOpts({ mode: "mins", mins: OBS.q("mins", opts.mins != null ? opts.mins : "10") }, false);
+    }
+
+    target = initialTarget();
 
     function render() {
       let ms = target - Date.now();
@@ -100,6 +138,7 @@
         el.innerHTML = doneText;
         return;
       }
+      el.classList.remove("count-done");
       const total = Math.floor(ms / 1000);
       const h = Math.floor(total / 3600);
       const m = Math.floor((total % 3600) / 60);
@@ -112,22 +151,43 @@
     }
     render();
     setInterval(render, 1000);
+
+    OBS._cdCtl = { set(o) { target = fromOpts(o || {}, true); render(); } };
+    return OBS._cdCtl;
   };
 
   /* ---------- Topic text (?topic=...) ---------- */
   OBS.applyTopic = function () {
-    const topic = OBS.q("topic", null);
-    document.querySelectorAll("[data-topic]").forEach((el) => {
-      if (topic) el.textContent = topic;
-      else if (el.dataset.topic) el.textContent = el.dataset.topic; // fallback default
-    });
+    const urlTopic = OBS.q("topic", null);
+    if (urlTopic != null) OBS.setTopic(urlTopic);
+  };
+
+  /* Update every topic surface live, showing/hiding the pill when empty. */
+  OBS.setTopic = function (topic) {
+    const t = (topic || "").trim();
+    document.querySelectorAll(".js-topic").forEach((v) => { v.textContent = t; });
+    document.querySelectorAll(".js-topic-wrap").forEach((w) => { w.style.display = t ? "" : "none"; });
   };
 
   /* ---------- Variant (?v=1|2|3) ---------- */
   OBS.variant = parseInt(OBS.q("v", "1"), 10) || 1;
 
+  /* ---------- Live control channel (Server-Sent Events) ---------- */
+  OBS.connectLive = function (onState) {
+    if (location.protocol === "file:" || typeof EventSource === "undefined") return; // local file: no server
+    try {
+      const es = new EventSource("/api/events");
+      es.addEventListener("state", (e) => {
+        let s; try { s = JSON.parse(e.data); } catch (_) { return; }
+        try { onState(s); } catch (_) {}
+      });
+      OBS._es = es;
+    } catch (e) { /* not served by our server — stay static */ }
+  };
+
   /* ---------- Boot ---------- */
   OBS.boot = function () {
+    applyAccent();
     fit();
     const stage = document.querySelector(".stage");
     if (stage && OBS.isDemo) stage.dataset.demo = "1";
