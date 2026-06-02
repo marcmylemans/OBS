@@ -35,6 +35,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Enables building the arm64 image on the amd64 runner.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -63,8 +69,13 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          # Single arch on PRs (fast validation); multi-arch only when publishing.
+          platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # Skip provenance/SBOM attestations so the published tag is a clean
+          # multi-arch manifest (and the build is a bit faster).
+          provenance: false
