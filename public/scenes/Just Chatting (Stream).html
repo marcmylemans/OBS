@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Just Chatting (Stream) — Mylemans Online</title>
+<link rel="stylesheet" href="overlay.css"/>
+<link rel="stylesheet" href="scenes.css"/>
+</head>
+<body>
+<div class="stage"></div>
+<script src="overlay.js"></script>
+<script src="scenes.js"></script>
+<script>
+  renderScene({ scene: "jc-stream", mode: "talk", cam: false, live: true,
+                chat: true, nowplaying: true, topic: "Homelab Q&amp;A" });
+</script>
+</body>
+</html>

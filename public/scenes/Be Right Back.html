@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Be Right Back — Mylemans Online</title>
+<link rel="stylesheet" href="overlay.css"/>
+<link rel="stylesheet" href="standby.css"/>
+</head>
+<body>
+<div class="stage"></div>
+<script src="overlay.js"></script>
+<script src="standby.js"></script>
+<script>
+  renderStandby({
+    scene: "brb",
+    eyebrow: "Stream paused",
+    title: "Be right back",
+    subtext: "Stepping away for a minute &mdash; the stream is still rolling. Hang tight, back shortly.",
+    countdown: true,
+    cdLabel: "Back in",
+    mins: 5,
+    done: "Back now"
+  });
+</script>
+</body>
+</html>

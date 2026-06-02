@@ -1,0 +1,8 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+music
+*.md
+!public/**/*.md
+.DS_Store
