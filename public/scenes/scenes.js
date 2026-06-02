@@ -170,7 +170,7 @@ function renderScene(cfg) {
         ${clock}
       </div>
       <div class="screen-frame rail-screen">
-        ${cfg.demo ? deskInner : '<div class="scr-label">Screen capture<br/>scale your display source to fill</div>'}
+        ${cfg.demo ? deskInner : ""}
       </div>
       <div class="rail-col">
         ${cfg.chat ? chatPanel() : railInfo(cfg)}
