@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>OBS Scene Pack — Mylemans Online</title>
+<link rel="stylesheet" href="overlay.css"/>
+<style>
+  html { overflow: auto; height: auto; }
+  body { overflow: auto; height: auto; background: var(--navy-950); }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 48px 40px 90px; }
+
+  /* hero */
+  .masthead { display: flex; align-items: center; gap: 22px; margin-bottom: 10px; }
+  .masthead img { height: 64px; }
+  .masthead .ttl h1 { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; color: var(--white); }
+  .masthead .ttl p { font-size: 16px; color: var(--muted); margin-top: 4px; }
+  .lead { font-size: 17px; line-height: 1.6; color: var(--muted); max-width: 720px; margin: 22px 0 34px; }
+  .lead b { color: var(--text); font-weight: 600; }
+
+  /* config bar */
+  .config {
+    position: sticky; top: 16px; z-index: 20;
+    background: rgba(15,23,42,0.86); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 18px 22px; margin-bottom: 40px;
+    box-shadow: 0 24px 60px rgba(2,6,23,0.55);
+    display: flex; flex-wrap: wrap; align-items: flex-end; gap: 22px 28px;
+  }
+  .field { display: flex; flex-direction: column; gap: 7px; }
+  .field label { font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+  .field input, .field select {
+    font-family: var(--font); font-size: 15px; color: var(--text);
+    background: var(--navy-950); border: 1px solid var(--border-strong);
+    border-radius: 10px; padding: 9px 13px; min-width: 120px; outline: none;
+  }
+  .field input:focus, .field select:focus { border-color: var(--blue-500); }
+  .field input[type=text] { min-width: 230px; }
+  .seg { display: inline-flex; background: var(--navy-950); border: 1px solid var(--border-strong); border-radius: 10px; padding: 3px; gap: 3px; }
+  .seg button {
+    font-family: var(--font); font-size: 14px; font-weight: 600; color: var(--muted);
+    background: transparent; border: 0; border-radius: 8px; padding: 7px 14px; cursor: pointer;
+  }
+  .seg button.on { background: var(--grad-primary); color: #fff; }
+  .config .hint { font-size: 13px; color: var(--muted); flex-basis: 100%; margin-top: 2px; }
+  .config .hint b { color: var(--blue-400); }
+
+  /* sections */
+  .group { margin-bottom: 16px; }
+  .grouphead { display: flex; align-items: center; gap: 16px; margin: 30px 0 20px; }
+  .grouphead .lbl { font-size: 13px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--blue-400); }
+  .grouphead .line { flex: 1; height: 1px; background: var(--border); }
+  .grouphead .count { font-size: 13px; color: var(--muted); }
+
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+  @media (max-width: 880px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--navy-800); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+  .thumb {
+    position: relative; aspect-ratio: 16 / 9; background: #050b16;
+    border-bottom: 1px solid var(--border); overflow: hidden;
+  }
+  .thumb iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; pointer-events: none; }
+  .thumb .checker {
+    position: absolute; inset: 0; opacity: 0.5;
+    background-image:
+      linear-gradient(45deg, #0c1626 25%, transparent 25%),
+      linear-gradient(-45deg, #0c1626 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #0c1626 75%),
+      linear-gradient(-45deg, transparent 75%, #0c1626 75%);
+    background-size: 28px 28px; background-position: 0 0, 0 14px, 14px -14px, -14px 0;
+  }
+  .card .meta { padding: 16px 18px 18px; }
+  .card .meta .row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .card .meta h3 { font-size: 18px; font-weight: 700; color: var(--white); letter-spacing: -0.01em; }
+  .card .meta .sub { font-size: 13.5px; color: var(--muted); margin-top: 5px; line-height: 1.45; }
+  .tag { font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 5px 10px; border-radius: 999px; white-space: nowrap; }
+  .tag.live { background: rgba(239,68,68,0.16); color: #fca5a5; }
+  .tag.rec  { background: rgba(56,189,248,0.14); color: var(--sky-400); }
+  .tag.standby { background: rgba(148,163,184,0.16); color: var(--slate-400); }
+
+  .actions { display: flex; align-items: center; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  .btn {
+    font-family: var(--font); font-size: 13.5px; font-weight: 600; cursor: pointer;
+    border-radius: 999px; padding: 9px 16px; border: 1px solid var(--border-strong);
+    background: transparent; color: var(--text); text-decoration: none; display: inline-flex; align-items: center; gap: 7px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .btn:hover { border-color: var(--blue-500); }
+  .btn.primary { background: var(--grad-primary); border-color: transparent; color: #fff; box-shadow: 0 10px 24px rgba(37,99,235,0.35); }
+  .btn.primary:hover { filter: brightness(1.06); }
+  .vpills { display: inline-flex; gap: 6px; margin-left: auto; }
+  .vpills button {
+    font-family: var(--font); font-size: 12.5px; font-weight: 700; cursor: pointer;
+    width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border-strong);
+    background: transparent; color: var(--muted);
+  }
+  .vpills button.on { background: var(--navy-700); color: var(--white); border-color: var(--blue-500); }
+  .urlout { margin-top: 12px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--slate-400); word-break: break-all; background: var(--navy-950); border: 1px solid var(--border); border-radius: 8px; padding: 8px 11px; }
+
+  /* setup */
+  .setup { margin-top: 56px; background: var(--navy-800); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 30px 34px; }
+  .setup h2 { font-size: 20px; font-weight: 700; color: var(--white); margin-bottom: 16px; }
+  .setup ol { margin: 0 0 6px 20px; }
+  .setup li { font-size: 14.5px; color: var(--muted); line-height: 1.7; margin-bottom: 7px; }
+  .setup li b { color: var(--text); }
+  .setup code { font-family: ui-monospace, Menlo, monospace; font-size: 13px; background: var(--navy-950); border: 1px solid var(--border); border-radius: 6px; padding: 2px 7px; color: var(--sky-400); }
+  .setup .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 8px; }
+  @media (max-width: 880px) { .setup .grid2 { grid-template-columns: 1fr; } }
+  .toast { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--navy-700); border: 1px solid var(--blue-500); color: var(--text); padding: 12px 22px; border-radius: 999px; font-size: 14px; opacity: 0; pointer-events: none; transition: all 0.25s; z-index: 100; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <img src="assets/logo-dark.png" alt="Mylemans Online"/>
+    <div class="ttl">
+      <h1>OBS Scene Pack</h1>
+      <p>Streaming &amp; recording overlays · Mylemans Online</p>
+    </div>
+    <a class="btn primary" href="/player/" style="margin-left:auto" title="Open the music player">🎵 Music Player</a>
+  </div>
+  <p class="lead">Eight browser-source scenes, one brand. Set your countdown and topic below, pick a standby
+  layout, then drop each <b>.html</b> into OBS as a Browser source at <b>1920×1080</b>. Transparent scenes
+  show your capture through; standby scenes are full-screen.</p>
+
+  <!-- CONFIG BAR -->
+  <div class="config">
+    <div class="field">
+      <label>Countdown mode</label>
+      <div class="seg" id="seg">
+        <button data-mode="mins" class="on">Minutes</button>
+        <button data-mode="until">Until time</button>
+      </div>
+    </div>
+    <div class="field" id="fMins">
+      <label>Minutes</label>
+      <input type="number" id="mins" value="10" min="1" max="180"/>
+    </div>
+    <div class="field" id="fUntil" style="display:none">
+      <label>Until (24h)</label>
+      <input type="text" id="until" value="20:30" placeholder="20:30"/>
+    </div>
+    <div class="field">
+      <label>On-screen topic</label>
+      <input type="text" id="topic" placeholder="e.g. Proxmox cluster setup"/>
+    </div>
+    <div class="field">
+      <label>Now playing (preview)</label>
+      <input type="text" id="track" placeholder="Artist — Title"/>
+    </div>
+    <div class="field">
+      <label>Standby layout</label>
+      <div class="seg" id="segV">
+        <button data-v="1" class="on">01</button>
+        <button data-v="2">02</button>
+        <button data-v="3">03</button>
+      </div>
+    </div>
+    <p class="hint">Changes update the previews live and bake into each scene's <b>Copy URL</b>. Webcam frame sits bottom-right at <b>1412, 773 · 460×259</b> — align your camera source to it.</p>
+  </div>
+
+  <div id="groups"></div>
+
+  <!-- SETUP -->
+  <div class="setup">
+    <h2>Adding a scene to OBS</h2>
+    <div class="grid2">
+      <ol>
+        <li>In a scene, add a <b>Browser</b> source → <b>Local file</b> → pick the scene's <code>.html</code>.</li>
+        <li>Set <b>Width 1920</b>, <b>Height 1080</b>. Leave the background transparent.</li>
+        <li>To bake in a countdown/topic/track, load the scene by <b>URL</b> using the <b>Copy URL</b> value (e.g. <code>file:///…/Starting Soon.html?mins=10</code>).</li>
+        <li>For overlays, layer this source <b>above</b> your screen / webcam captures.</li>
+      </ol>
+      <ol>
+        <li><b>Starting Soon / BRB:</b> tick <code>Refresh browser when scene becomes active</code> so the countdown restarts each time.</li>
+        <li><b>Just Chatting (Stream):</b> camera fills the frame underneath; the chat dock sits right at <b>x 1458, y 352 · 396×528</b>.</li>
+        <li><b>Screensharing + Webcam (Stream &amp; Record):</b> the optimized rail keeps your screen clear — scale your display capture into <b>x 36, y 84 · 1392×960</b> and place the camera at <b>x 1452, y 801 · 432×243</b> (same spot in both scenes). On the stream scene, drop your chat widget at <b>x 1470, y 136 · 396×635</b>.</li>
+        <li><b>Screensharing (Record, no cam):</b> full-screen — place your display capture at the full <b>1920×1080</b>; overlay chrome stays in the corners only.</li>
+      </ol>
+    </div>
+    <h2 style="margin-top:26px">Now playing &amp; chat</h2>
+    <div class="grid2">
+      <ol>
+        <li><b>Now playing</b> auto-reads <code>now-playing.txt</code> next to the scenes. The bundled <a href="/player/" style="color:var(--sky-400)">🎵 Music Player</a> writes it for you — play a track and the chip updates within 5s and hides when paused/stopped. (Any external tool — Spotify/foobar2000/Snip, OBS "Output current song" — can also write that file.)</li>
+        <li>Prefer a fixed label? Use <code>?track=Artist - Title</code> in the source URL instead.</li>
+      </ol>
+      <ol>
+        <li><b>Chat</b> shows a branded frame; add your real chat as a <i>separate</i> transparent Browser source (StreamElements / nightbot / your YouTube–Twitch widget) positioned over the coordinates above.</li>
+        <li>Chat &amp; Now playing appear on streaming scenes only — standby and recording stay clean (music chip still available on recordings if a track is set).</li>
+      </ol>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">Copied</div>
+
+<script>
+const SCENES = {
+  streaming: [
+    { f: "Starting Soon.html",            t: "Starting Soon",          s: "Live countdown · pick a layout below", tag: "standby", standby: true,  transparent: false },
+    { f: "Be Right Back.html",            t: "Be Right Back",          s: "\u201CBack in\u201D countdown · same layouts", tag: "standby", standby: true,  transparent: false },
+    { f: "Ending Stream.html",            t: "Ending Stream",          s: "Thanks + socials send-off",            tag: "standby", standby: true,  transparent: false },
+    { f: "Just Chatting (Stream).html",   t: "Just Chatting",          s: "Talking-head · LIVE · chat dock + now playing", tag: "live", standby: false, transparent: true },
+    { f: "Screenshare + Webcam (Stream).html", t: "Screensharing + Webcam", s: "Optimized rail · screen + chat over cam",  tag: "live", standby: false, transparent: true }
+  ],
+  recording: [
+    { f: "Just Chatting (Record).html",        t: "Just Chatting",          s: "Talking-head chrome · clean, no LIVE", tag: "rec", standby: false, transparent: true },
+    { f: "Screenshare + Webcam (Record).html", t: "Screensharing + Webcam", s: "Optimized rail · screen + cam + info card",  tag: "rec", standby: false, transparent: true },
+    { f: "Screenshare (Record).html",          t: "Screensharing",          s: "Full-screen · corner chrome only · no cam", tag: "rec", standby: false, transparent: true }
+  ]
+};
+
+const cfg = { mode: "mins", mins: 10, until: "20:30", topic: "", track: "", v: 1 };
+
+function baseQS(standby) {
+  const p = new URLSearchParams();
+  if (standby) {
+    p.set("v", cfg.v);
+    if (cfg.mode === "until" && cfg.until) p.set("until", cfg.until);
+    else p.set("mins", cfg.mins);
+  }
+  if (cfg.topic && !standby) p.set("topic", cfg.topic);
+  if (cfg.track && !standby) p.set("track", cfg.track);
+  return p.toString();
+}
+function srcFor(sc) {        // for the preview iframe (adds demo backdrop on transparent)
+  const q = baseQS(sc.standby);
+  const pre = sc.transparent ? ("demo=1" + (q ? "&" : "")) : "";
+  return encodeURI(sc.f) + "?" + pre + q + "&_=" + Date.now();
+}
+function urlFor(sc) {        // for OBS — absolute, copy-paste ready
+  const q = baseQS(sc.standby);
+  const abs = new URL(encodeURI(sc.f), location.href).href;
+  return abs + (q ? "?" + q : "");
+}
+
+function render() {
+  const host = document.getElementById("groups");
+  host.innerHTML = "";
+  for (const [key, list] of Object.entries(SCENES)) {
+    const g = document.createElement("div");
+    g.className = "group";
+    g.innerHTML = `<div class="grouphead">
+        <span class="lbl">${key}</span><span class="line"></span>
+        <span class="count">${list.length} scenes</span></div>
+      <div class="grid"></div>`;
+    const grid = g.querySelector(".grid");
+    list.forEach((sc) => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="thumb">
+          ${sc.transparent ? "" : '<div class="checker" style="display:none"></div>'}
+          <iframe scrolling="no"></iframe>
+        </div>
+        <div class="meta">
+          <div class="row">
+            <div>
+              <h3>${sc.t}</h3>
+              <div class="sub">${sc.s}</div>
+            </div>
+            <span class="tag ${sc.tag}">${sc.tag === "live" ? "Live" : sc.tag === "rec" ? "Record" : "Standby"}</span>
+          </div>
+          <div class="actions">
+            <a class="btn primary" target="_blank" data-open>Open scene \u2197</a>
+            <button class="btn" data-copy>Copy URL</button>
+            ${sc.standby ? `<div class="vpills">
+              ${[1,2,3].map(n=>`<button data-v="${n}" class="${cfg.v===n?'on':''}">${n}</button>`).join("")}
+            </div>` : ""}
+          </div>
+          <div class="urlout" data-url></div>
+        </div>`;
+      const iframe = card.querySelector("iframe");
+      iframe.src = srcFor(sc);
+      const open = card.querySelector("[data-open]");
+      open.href = encodeURI(sc.f) + "?" + (sc.transparent ? "demo=1&" : "") + baseQS(sc.standby);
+      card.querySelector("[data-url]").textContent = urlFor(sc);
+      card.querySelector("[data-copy]").addEventListener("click", () => {
+        navigator.clipboard.writeText(urlFor(sc)).then(showToast);
+      });
+      card.querySelectorAll(".vpills button").forEach((b) =>
+        b.addEventListener("click", () => { cfg.v = +b.dataset.v; syncV(); refreshAll(); }));
+      card._sc = sc; card._iframe = iframe;
+      grid.appendChild(card);
+    });
+    host.appendChild(g);
+  }
+}
+
+function refreshAll() {
+  document.querySelectorAll(".card").forEach((card) => {
+    if (!card._sc) return;
+    card._iframe.src = srcFor(card._sc);
+    card.querySelector("[data-url]").textContent = urlFor(card._sc);
+    const open = card.querySelector("[data-open]");
+    open.href = encodeURI(card._sc.f) + "?" + (card._sc.transparent ? "demo=1&" : "") + baseQS(card._sc.standby);
+  });
+}
+function syncV() {
+  document.querySelectorAll("#segV button").forEach((b) => b.classList.toggle("on", +b.dataset.v === cfg.v));
+  document.querySelectorAll(".vpills").forEach((vp) =>
+    vp.querySelectorAll("button").forEach((b) => b.classList.toggle("on", +b.dataset.v === cfg.v)));
+}
+
+let tmr;
+function debounceRefresh() { clearTimeout(tmr); tmr = setTimeout(refreshAll, 350); }
+
+function showToast() {
+  const t = document.getElementById("toast");
+  t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 1300);
+}
+
+// config wiring
+document.getElementById("seg").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  cfg.mode = b.dataset.mode;
+  document.querySelectorAll("#seg button").forEach((x) => x.classList.toggle("on", x === b));
+  document.getElementById("fMins").style.display = cfg.mode === "mins" ? "" : "none";
+  document.getElementById("fUntil").style.display = cfg.mode === "until" ? "" : "none";
+  refreshAll();
+});
+document.getElementById("segV").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  cfg.v = +b.dataset.v; syncV(); refreshAll();
+});
+document.getElementById("mins").addEventListener("input", (e) => { cfg.mins = e.target.value || 10; debounceRefresh(); });
+document.getElementById("until").addEventListener("input", (e) => { cfg.until = e.target.value; debounceRefresh(); });
+document.getElementById("topic").addEventListener("input", (e) => { cfg.topic = e.target.value; debounceRefresh(); });
+document.getElementById("track").addEventListener("input", (e) => { cfg.track = e.target.value; debounceRefresh(); });
+
+render();
+</script>
+</body>
+</html>

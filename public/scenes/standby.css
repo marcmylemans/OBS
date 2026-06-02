@@ -1,0 +1,80 @@
+/* ================================================================
+   Standby scenes (Starting Soon / Be Right Back / Ending Stream)
+   Three variant layouts, switched via ?v=1|2|3
+   ================================================================ */
+
+.sb { position: absolute; inset: 0; }
+.sb .top {
+  position: absolute; top: 64px; left: 90px; right: 90px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.sb .clock { color: var(--muted); }
+
+.cd-wrap { display: flex; flex-direction: column; gap: 14px; }
+.cd-label {
+  font-size: 18px; font-weight: 600; letter-spacing: 0.26em; text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ---------------- Variant 1 — Centered ---------------- */
+.v1 .sb .mid {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; gap: 30px; padding: 0 120px;
+}
+.v1 .eyebrow { font-size: 21px; }
+.v1 .title { font-size: 104px; }
+.v1 .cd-wrap { align-items: center; margin-top: 8px; }
+.v1 .countdown { font-size: 138px; line-height: 1; }
+.v1 .subtext { font-size: 29px; text-align: center; }
+.v1 .sb .bottom {
+  position: absolute; left: 0; right: 0; bottom: 70px;
+  display: flex; justify-content: center;
+}
+
+/* ---------------- Variant 2 — Editorial (left) ---------------- */
+.v2 .sb .mid {
+  position: absolute; left: 90px; right: 90px; top: 0; bottom: 0;
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
+  gap: 26px;
+}
+.v2 .eyebrow { font-size: 21px; }
+.v2 .title { font-size: 132px; line-height: 0.98; }
+.v2 .cd-wrap { align-items: flex-start; margin-top: 10px; }
+.v2 .countdown { font-size: 150px; line-height: 1; }
+.v2 .subtext { font-size: 30px; }
+.v2 .sb .bottom { position: absolute; left: 90px; bottom: 72px; }
+.v2 .watermark {
+  position: absolute; right: -120px; top: 50%; transform: translateY(-50%);
+  width: 760px; height: 760px; opacity: 0.06; pointer-events: none;
+  filter: grayscale(0.2);
+}
+.v2 .watermark img { width: 100%; height: 100%; object-fit: contain; }
+
+/* ---------------- Variant 3 — Panel / hero card ---------------- */
+.v3 .sb .mid {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center; padding: 120px;
+}
+.v3 .card {
+  width: min(1240px, 100%);
+  background: var(--grad-hero);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 40px 110px rgba(2,6,23,0.65), inset 0 1px 0 rgba(255,255,255,0.04);
+  padding: 72px 80px;
+  display: flex; flex-direction: column; gap: 26px; align-items: flex-start;
+  position: relative; overflow: hidden;
+}
+.v3 .card::after {
+  content: ""; position: absolute; right: -80px; top: -80px;
+  width: 360px; height: 360px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(56,189,248,0.18), transparent 70%);
+}
+.v3 .eyebrow { font-size: 20px; }
+.v3 .title { font-size: 86px; line-height: 1.0; }
+.v3 .cd-wrap { align-items: flex-start; margin-top: 6px; }
+.v3 .countdown { font-size: 112px; line-height: 1; }
+.v3 .subtext { font-size: 27px; }
+.v3 .card .divider { width: 100%; height: 1px; background: var(--border); margin: 6px 0 2px; }
+.v3 .card .socials { position: relative; }

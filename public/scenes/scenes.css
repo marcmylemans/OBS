@@ -1,0 +1,111 @@
+/* ================================================================
+   Live / Record overlay scenes (talking-head + screenshare)
+   Transparent background — only the chrome is drawn.
+   ================================================================ */
+
+/* talking-head layout anchors */
+.scene-top {
+  position: absolute; top: 46px; left: 48px; right: 48px;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 24px;
+}
+.scene-top .center {
+  position: absolute; left: 50%; top: 0; transform: translateX(-50%);
+}
+.scene-bl { position: absolute; left: 48px; bottom: 48px; }
+.scene-br { position: absolute; right: 48px; bottom: 48px; }
+
+/* brand bar social pills sit inline */
+.brandbar .topic { background: rgba(15,23,42,0.55); padding: 9px 20px; }
+.brandbar .topic .v { font-size: 19px; }
+.brandbar .topic .k { font-size: 12px; }
+.brandbar .clock { color: var(--text); font-size: 19px; }
+
+/* webcam live dot (top-right of frame) */
+.cam .cam-live {
+  position: absolute; top: 10px; right: 10px;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px 6px 10px; border-radius: 999px;
+  background: rgba(220,38,38,0.92);
+}
+.cam .cam-live .pulse {
+  width: 10px; height: 10px; border-radius: 50%; background:#fff;
+  animation: pulse 1.8s ease-out infinite;
+}
+.cam .cam-live b { font-size: 14px; font-weight: 800; letter-spacing: 0.14em; color:#fff; }
+
+/* corner wordmark chip (screenshare, no cam) */
+.wordchip {
+  position: absolute; right: 48px; bottom: 44px;
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 12px 22px 12px 16px; border-radius: 999px;
+  background: rgba(2,6,23,0.72); border: 1px solid var(--border);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 14px 34px rgba(2,6,23,0.45);
+}
+.wordchip img { height: 30px; }
+.wordchip b { font-size: 20px; font-weight: 700; color: var(--white); }
+.wordchip span { font-size: 16px; color: var(--muted); }
+
+/* brandmark used small in talk-record top-left */
+.scene-top .brandmark img { height: 44px; }
+.scene-top .brandmark .wm b { font-size: 21px; }
+.scene-top .brandmark .wm span { font-size: 11px; }
+
+/* demo window content for screenshare preview */
+.demo .win.main { left: 60px; top: 110px; width: 1180px; height: 760px; }
+.demo .win.side { right: 60px; top: 150px; width: 560px; height: 520px; }
+
+/* ---------- RAIL LAYOUT (optimized screenshare) ---------- */
+.rail-screen { left: 36px; top: 84px; width: 1392px; height: 960px; }
+.rail-col { position: absolute; left: 1452px; top: 84px; width: 432px; height: 960px; }
+.rail-col .chat { position: absolute; left: 0; top: 0; width: 432px; height: 705px; }
+.rail-col .cam {
+  position: absolute; left: 0; right: auto; top: auto; bottom: 0;
+  width: 432px; height: 243px;
+}
+/* recording rail: info card occupies the same slot as chat */
+.rail-info {
+  position: absolute; left: 0; top: 0; width: 432px; height: 705px;
+  background: rgba(2,6,23,0.74); border: 1px solid var(--border); border-radius: 16px;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 20px 46px rgba(2,6,23,0.5);
+  padding: 30px 26px; display: flex; flex-direction: column; gap: 22px;
+}
+.ri-topic { display: flex; flex-direction: column; gap: 9px; }
+.ri-topic .k { font-size: 13px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--blue-400); }
+.ri-topic .v { font-size: 27px; font-weight: 700; color: var(--white); line-height: 1.22; }
+.ri-div { height: 1px; background: var(--border); }
+.ri-socials { display: flex; flex-direction: column; gap: 12px; }
+.rail-info .chip { justify-content: flex-start; width: 100%; }
+.ri-brand { margin-top: auto; }
+.rail-info .brandmark img { height: 40px; }
+.rail-info .brandmark .wm b { font-size: 19px; }
+.rail-info .brandmark .wm span { font-size: 12px; letter-spacing: 0.06em; text-transform: none; }
+.brandbar .nowplaying { padding: 7px 16px 7px 11px; }
+.brandbar .np-eq { height: 18px; }
+.brandbar .np-track { font-size: 15px; max-width: 240px; }
+.brandbar .np-k { font-size: 10px; }
+
+/* ---------- Just Chatting chat dock + bottom-left stack ---------- */
+.jc-chat { position: absolute; right: 48px; top: 296px; width: 432px; height: 604px; }
+.scene-bl .stackcol { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+
+/* ---------- MINIMAL FULL-SCREEN SHARE (no cam) ---------- */
+.mini { position: absolute; display: flex; align-items: center; gap: 14px; }
+.mini.tl { top: 40px; left: 40px; }
+.mini.tr { top: 40px; right: 40px; }
+.mini.bl { bottom: 40px; left: 40px; }
+.mini.br { bottom: 40px; right: 40px; }
+.mini .wordchip { position: static; right: auto; bottom: auto; }
+.statusmini {
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 11px 19px; border-radius: 999px;
+  background: rgba(2,6,23,0.72); border: 1px solid var(--border);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 14px 34px rgba(2,6,23,0.4);
+  font-variant-numeric: tabular-nums;
+}
+.statusmini .rdot { width: 12px; height: 12px; border-radius: 50%; background: #ef4444; animation: blink 1.6s steps(1,end) infinite; }
+.statusmini b { font-size: 16px; font-weight: 800; letter-spacing: 0.14em; color: var(--text); }
+.statusmini .div { width: 1px; height: 17px; background: var(--border-strong); }
+.statusmini .t { font-size: 18px; font-weight: 600; color: var(--text); }

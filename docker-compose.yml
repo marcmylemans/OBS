@@ -1,0 +1,15 @@
+services:
+  obs-scenes:
+    build: .
+    image: mylemans-obs-scenes
+    container_name: obs-scenes
+    ports:
+      - "8080:8080"
+    volumes:
+      # Map your music library into the container (read-only).
+      # Change the left side to wherever your music lives.
+      - ./music:/music:ro
+    environment:
+      - PORT=8080
+      - MUSIC_DIR=/music
+    restart: unless-stopped

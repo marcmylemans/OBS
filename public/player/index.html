@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Music Player — Mylemans Online OBS</title>
+<link rel="stylesheet" href="player.css"/>
+</head>
+<body>
+<div class="app">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">🎵</span>
+      <div class="brand-txt">
+        <b>Music Player</b>
+        <span>Mylemans Online · OBS Now Playing</span>
+      </div>
+    </div>
+    <div class="search">
+      <svg viewBox="0 0 24 24" class="search-ico"><path d="M21 21l-4.3-4.3M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="search" type="text" placeholder="Search title, artist or album…" autocomplete="off"/>
+    </div>
+    <div class="topbar-actions">
+      <span id="np-status" class="np-status off" title="now-playing.txt state">OBS: idle</span>
+      <button id="refresh" class="ghost-btn" title="Rescan music folder">Rescan</button>
+      <a class="ghost-btn" href="/scenes/" title="Back to the OBS control room">← Control room</a>
+    </div>
+  </header>
+
+  <!-- Track library -->
+  <main class="library">
+    <div class="lib-head">
+      <span class="col-num">#</span>
+      <span class="col-title">Title</span>
+      <span class="col-album">Album</span>
+      <span class="col-dur">⏱</span>
+    </div>
+    <div id="tracklist" class="tracklist"></div>
+    <div id="empty" class="empty" hidden>
+      <h2>No music found</h2>
+      <p>Mount your music folder to the container at <code>/music</code> and click <b>Rescan</b>.</p>
+      <p class="dim">e.g. <code>docker run -v /path/to/music:/music ...</code></p>
+    </div>
+  </main>
+
+  <!-- Now-playing bar -->
+  <footer class="nowbar">
+    <div class="now-meta">
+      <div class="now-cover" id="now-cover"><span>♪</span></div>
+      <div class="now-text">
+        <div class="now-title" id="now-title">Nothing playing</div>
+        <div class="now-artist" id="now-artist">Pick a track to start</div>
+      </div>
+    </div>
+
+    <div class="now-center">
+      <div class="controls">
+        <button id="shuffle" class="ctl small" title="Shuffle">
+          <svg viewBox="0 0 24 24"><path d="M16 3h5v5M21 3l-7 7M16 21h5v-5M21 21l-7-7M3 8l4 4M3 16l11-11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button id="prev" class="ctl" title="Previous">
+          <svg viewBox="0 0 24 24"><path d="M6 5v14M20 5L9 12l11 7V5z" fill="currentColor"/></svg>
+        </button>
+        <button id="playpause" class="ctl play" title="Play / pause">
+          <svg id="ico-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8V4z" fill="currentColor"/></svg>
+          <svg id="ico-pause" viewBox="0 0 24 24" hidden><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>
+        </button>
+        <button id="next" class="ctl" title="Next">
+          <svg viewBox="0 0 24 24"><path d="M18 5v14M4 5l11 7L4 19V5z" fill="currentColor"/></svg>
+        </button>
+        <button id="repeat" class="ctl small" title="Repeat">
+          <svg viewBox="0 0 24 24"><path d="M17 2l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <div class="seek">
+        <span class="t" id="cur">0:00</span>
+        <input id="seekbar" class="bar" type="range" min="0" max="1000" value="0"/>
+        <span class="t" id="dur">0:00</span>
+      </div>
+    </div>
+
+    <div class="now-right">
+      <svg viewBox="0 0 24 24" class="vol-ico"><path d="M3 10v4h4l5 5V5L7 10H3zM16 8a5 5 0 0 1 0 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <input id="volume" class="bar vol" type="range" min="0" max="100" value="100"/>
+    </div>
+  </footer>
+
+  <audio id="audio" preload="metadata"></audio>
+</div>
+<script src="player.js"></script>
+</body>
+</html>
