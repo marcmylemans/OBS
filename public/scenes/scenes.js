@@ -34,14 +34,15 @@ function nowPlayingChip() {
     </div>`;
 }
 
-/* recording rail: clean info card where chat would sit on a stream */
-function railInfo(cfg) {
+/* recording rail: clean info card where chat would sit on a stream.
+   The "Now covering" block is shown only when a topic is set. */
+function railInfo(topic) {
   return `<div class="rail-info">
-      <div class="ri-topic">
+      ${topic ? `<div class="ri-topic">
         <span class="k">Now covering</span>
-        <span class="v" data-topic="${cfg.topic || ""}">${cfg.topic || "This session"}</span>
+        <span class="v">${topic}</span>
       </div>
-      <div class="ri-div"></div>
+      <div class="ri-div"></div>` : ""}
       <div class="ri-socials">${OBS.socialChips()}</div>
       <div class="ri-brand">
         <div class="brandmark">
@@ -82,6 +83,10 @@ function renderScene(cfg) {
   const isRail = cfg.layout === "rail";
   cfg.demo = OBS.isDemo;
 
+  /* Effective topic: ?topic= URL param overrides the scene default.
+     When nothing is set, the topic pill is hidden entirely. */
+  const topic = (OBS.q("topic", cfg.topic || "") || "").trim();
+
   const clock = `<div class="clock"><span class="dot"></span><span data-t>00:00</span></div>`;
   const statusBadge = live
     ? `<div class="live"><span class="pulse"></span><b>LIVE</b></div>`
@@ -93,11 +98,11 @@ function renderScene(cfg) {
       <div class="wm"><b>Mylemans Online</b><span>Homelab · Automation</span></div>
     </div>`;
 
-  const topicPill = `
+  const topicPill = topic ? `
     <div class="topic">
       <span class="k">On screen</span><span class="div"></span>
-      <span class="v" data-topic="${cfg.topic || ""}">${cfg.topic || "Live session"}</span>
-    </div>`;
+      <span class="v">${topic}</span>
+    </div>` : "";
 
   const nameplate = `
     <div class="nameplate">
@@ -145,12 +150,7 @@ function renderScene(cfg) {
     /* ---------- FULL-SCREEN SHARE (no cam) — corner chrome only ---------- */
     html = `
       ${cfg.demo ? `<div class="demo desk"><div class="win main">${deskInner}</div></div>` : ""}
-      <div class="mini tl">
-        <div class="topic">
-          <span class="k">On screen</span><span class="div"></span>
-          <span class="v" data-topic="${cfg.topic || ""}">${cfg.topic || "Live session"}</span>
-        </div>
-      </div>
+      ${topic ? `<div class="mini tl">${topicPill}</div>` : ""}
       <div class="mini tr">
         <div class="statusmini clock"><span class="rdot"></span><b>REC</b><span class="div"></span><span class="t" data-t>00:00</span></div>
       </div>
@@ -170,10 +170,10 @@ function renderScene(cfg) {
         ${clock}
       </div>
       <div class="screen-frame rail-screen">
-        ${cfg.demo ? deskInner : '<div class="scr-label">Screen capture<br/>scale your display source to fill</div>'}
+        ${cfg.demo ? deskInner : ""}
       </div>
       <div class="rail-col">
-        ${cfg.chat ? chatPanel() : railInfo(cfg)}
+        ${cfg.chat ? chatPanel() : railInfo(topic)}
         ${cfg.cam ? camFrame("") : ""}
       </div>`;
   } else if (isShare) {
