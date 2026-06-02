@@ -2,12 +2,12 @@
 
 This folder contains a Stream Deck **+** layout tailored to the eight OBS scenes,
 plus everything needed to drive the overlays and the bundled music player from
-the deck — including the four dials.
+the deck - including the four dials.
 
 > **Why two setup paths?** Switching OBS scenes and controlling OBS audio on the
 > dials is handled by Elgato's official **OBS Studio** plugin. But sending plain
-> HTTP to this app (topic / countdown / music transport) — *especially from the
-> SD+ dials* — is something the stock Elgato app doesn't do well with generic
+> HTTP to this app (topic / countdown / music transport) - *especially from the
+> SD+ dials* - is something the stock Elgato app doesn't do well with generic
 > plugins. **Bitfocus Companion** (free, open-source) has first-class SD+ encoder
 > + HTTP support and is the reliable way to wire the dials. Use whichever path
 > fits; you can even run both (Companion takes over the deck while it runs).
@@ -18,7 +18,7 @@ the deck — including the four dials.
 
 Stream Deck + = **8 LCD keys** (2 rows × 4) + a **touch strip** + **4 dials**.
 
-### Keys — page 1 · STREAM
+### Keys - page 1 · STREAM
 ```
 ┌───────────────┬───────────────┬───────────────┬───────────────┐
 │ Starting Soon │ Be Right Back │ Ending Stream │ Just Chatting▶│
@@ -27,7 +27,7 @@ Stream Deck + = **8 LCD keys** (2 rows × 4) + a **touch strip** + **4 dials**.
 └───────────────┴───────────────┴───────────────┴───────────────┘
 ```
 
-### Keys — page 2 · RECORD
+### Keys - page 2 · RECORD
 ```
 ┌───────────────┬───────────────┬───────────────┬───────────────┐
 │ JustChatting●R│ Screenshare+●R│ Screenshare ●R│ → STREAM      │
@@ -69,42 +69,42 @@ IP), port `8080` by default.
 | Music volume absolute | `http://HOST:8080/api/cmd/player/volume?value=50` |
 
 All return small JSON and are safe to call repeatedly. Music commands require the
-player page (`/player/`) to be open somewhere — it applies them over the live
+player page (`/player/`) to be open somewhere - it applies them over the live
 channel (it does not need to be the focused window).
 
 ---
 
-## Path A — Bitfocus Companion (recommended, full dial support)
+## Path A - Bitfocus Companion (recommended, full dial support)
 
 1. Install [Companion](https://bitfocus.io/companion) and add your Stream Deck +
    (Companion → Surfaces; or use the Stream Deck app's "Bitfocus Companion" mode
    if running both).
 2. **Connections** → add:
-   - **OBS Studio** (`companion-module-obs-studio`) — point at obs-websocket
+   - **OBS Studio** (`companion-module-obs-studio`) - point at obs-websocket
      (Tools → WebSocket Server Settings in OBS). Used for scene switching + the
      mic/desktop dials.
-   - **Generic HTTP** (`generic-http`) — base URL `http://HOST:8080`. Used for
+   - **Generic HTTP** (`generic-http`) - base URL `http://HOST:8080`. Used for
      this app.
-3. **Buttons** — for each scene key, add an **OBS → Set Scene** action with the
+3. **Buttons** - for each scene key, add an **OBS → Set Scene** action with the
    matching OBS scene name. For the control keys, add a **Generic HTTP → GET**
    action with the URL from the table above (e.g. *Topic: clear* → `/api/cmd/topic/clear`).
-4. **Dials (rotary)** — Companion lets you bind *rotate left*, *rotate right* and
+4. **Dials (rotary)** - Companion lets you bind *rotate left*, *rotate right* and
    *press* on each encoder:
-   - **Dial 1** — rotate right → `GET /api/cmd/player/volume?delta=2`; rotate left
+   - **Dial 1** - rotate right → `GET /api/cmd/player/volume?delta=2`; rotate left
      → `?delta=-2`; press → `GET /api/cmd/player/playpause`.
-   - **Dial 2 / 3** — OBS module *Set/Adjust source volume* on rotate, *Toggle mute*
+   - **Dial 2 / 3** - OBS module *Set/Adjust source volume* on rotate, *Toggle mute*
      on press (pick your Mic / Desktop audio sources).
-   - **Dial 4** — rotate right → `GET /api/cmd/countdown?delta=1`; rotate left →
+   - **Dial 4** - rotate right → `GET /api/cmd/countdown?delta=1`; rotate left →
      `?delta=-1`; press → `GET /api/cmd/countdown/start`.
 
 > Tip: set each dial's text on the touch strip (e.g. "Music", "Mic", "Desktop",
 > "Timer") so the labels show above the knobs.
 
-## Path B — Elgato Stream Deck app
+## Path B - Elgato Stream Deck app
 
 1. Install the **OBS Studio** plugin (Stream Deck store) and connect it to
    obs-websocket. Assign the 8 keys to **Scene** actions (your OBS scene names).
-2. **Dials 2 & 3:** the OBS plugin provides audio actions usable on dials — assign
+2. **Dials 2 & 3:** the OBS plugin provides audio actions usable on dials - assign
    your Mic and Desktop/music sources (rotate = level, press = mute).
 3. **Dials 1 & 4 (music / countdown) and the HTTP control keys:** the stock app
    needs a web-request capable action. Install a plugin such as **BarRaider's
@@ -123,7 +123,7 @@ two pages plus utility keys. Import via the Stream Deck app → Profiles →
 ⚠️ It's a scaffold: after import you'll likely need to (a) re-select each scene in
 the OBS action so it matches *your* OBS scene names, and (b) assign the dials per
 Path A/B above. If the app refuses the import (device-model mismatch), use the
-manual setup — it's the reliable route. Regenerate the file any time with
+manual setup - it's the reliable route. Regenerate the file any time with
 `node streamdeck/build-profile.mjs`.
 
 ## Naming your OBS scenes

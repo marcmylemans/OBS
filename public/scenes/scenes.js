@@ -8,9 +8,9 @@
 const DEMO_CHAT = [
   { u: "k3vin_homelab", c: "#60a5fa", t: "that proxmox tip just saved my cluster" },
   { u: "NoraOps",       c: "#38bdf8", t: "which NIC are you passing through?" },
-  { u: "Marc",          c: "#ffffff", badge: "host", bt: "HOST", t: "VirtIO — config coming up in a sec" },
+  { u: "Marc",          c: "#ffffff", badge: "host", bt: "HOST", t: "VirtIO - config coming up in a sec" },
   { u: "switch_kid",    c: "#a78bfa", t: "VLAN 30 represent" },
-  { u: "ModBot",        c: "#56d364", badge: "mod",  bt: "MOD",  t: "Welcome in — keep it friendly!" }
+  { u: "ModBot",        c: "#56d364", badge: "mod",  bt: "MOD",  t: "Welcome in - keep it friendly!" }
 ];
 
 function chatPanel(extraClass) {
@@ -67,14 +67,14 @@ function setupNowPlaying() {
     if (txt) { track.textContent = txt; el.style.display = ""; }
     else { el.style.display = "none"; }
   };
-  if (OBS.isDemo) { set(OBS.q("track", "Tycho — Awake")); return { set, locked: true }; }
+  if (OBS.isDemo) { set(OBS.q("track", "Tycho - Awake")); return { set, locked: true }; }
   const param = OBS.q("track", null);
   if (param != null) { set(param); return { set, locked: true }; }
   async function poll() {
     try {
       const r = await fetch("now-playing.txt?_=" + Date.now(), { cache: "no-store" });
       if (r.ok) set(await r.text());
-    } catch (e) { /* no file yet — stay hidden */ }
+    } catch (e) { /* no file yet - stay hidden */ }
   }
   poll();
   setInterval(poll, 5000);
@@ -90,7 +90,7 @@ function renderScene(cfg) {
   const brand = OBS.brand;
 
   /* Recording scenes are deliberately minimal: same visual style as the
-     streaming scenes, but no REC badge, clock, now-playing or socials — the
+     streaming scenes, but no REC badge, clock, now-playing or socials - the
      screen + webcam are source-recorded separately. */
   const rec = !live;
   const showNow = live && cfg.nowplaying;
@@ -238,7 +238,7 @@ function renderScene(cfg) {
   if (showNow) np = setupNowPlaying();
 
   /* Live control channel: update topic + now-playing as the control room /
-     player push changes (no source refresh needed). topic is an override —
+     player push changes (no source refresh needed). topic is an override -
      only applied when non-null, and never when pinned via ?topic=. */
   OBS.connectLive((s) => {
     if (!topicLocked && s.topic != null) OBS.setTopic(s.topic);

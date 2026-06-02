@@ -1,4 +1,4 @@
-# OBS Scene Pack — Mylemans Online
+# OBS Scene Pack - Mylemans Online
 
 A Dockerized web server for the **Mylemans Online OBS Scene Pack**: eight
 browser-source overlays (1920×1080) for streaming and recording, a **control
@@ -10,15 +10,15 @@ music files.
 
 | Path | What it is |
 | --- | --- |
-| `public/scenes/` | The OBS Scene Pack — control room (`index.html`) + 8 scene overlays |
+| `public/scenes/` | The OBS Scene Pack - control room (`index.html`) + 8 scene overlays |
 | `public/player/` | The music player UI |
 | `server/server.js` | Express server: serves the scenes + player, scans music, writes `now-playing.txt` |
 | `Dockerfile`, `docker-compose.yml` | Container build + run |
 
 ### The eight scenes
 
-**Streaming** — Starting Soon · Be Right Back · Ending Stream · Just Chatting · Screensharing + Webcam
-**Recording** — Just Chatting · Screensharing + Webcam · Screensharing (no webcam)
+**Streaming** - Starting Soon · Be Right Back · Ending Stream · Just Chatting · Screensharing + Webcam
+**Recording** - Just Chatting · Screensharing + Webcam · Screensharing (no webcam)
 
 All scenes are transparent browser sources (standby scenes are full-screen). They
 self-scale from 1920×1080 to any canvas size, so they stay crisp at 1080p or 4K.
@@ -56,7 +56,7 @@ MUSIC_DIR=/path/to/your/music npm start
 A GitHub Actions workflow (`.github/workflows/docker-build.yml`) builds and
 publishes a **multi-arch image** (`linux/amd64` + `linux/arm64`, so it runs on
 PCs/servers as well as Raspberry Pi / Apple Silicon) to GHCR on every push to
-`main` and on `v*` tags. Pull it instead of building locally — Docker
+`main` and on `v*` tags. Pull it instead of building locally - Docker
 auto-selects the right architecture:
 
 ```bash
@@ -68,7 +68,7 @@ Tags follow the branch/semver (`latest`, `v1.2.3`, `1.2`, …). The package must
 be made public (or you must `docker login ghcr.io`) to pull it.
 
 The build is optimized for speed: dependencies (pure-JS) are installed once on
-the build platform and copied into each arch — avoiding slow QEMU `npm` runs —
+the build platform and copied into each arch - avoiding slow QEMU `npm` runs -
 and both the BuildKit layer cache (GitHub Actions cache) and the npm cache are
 reused across runs.
 
@@ -77,7 +77,7 @@ reused across runs.
 1. Open the **control room** at `http://localhost:8080/scenes/`.
 2. Set your countdown (minutes or a target time), on-screen topic, and standby
    layout (01/02/03). Previews update live.
-3. Hit **Copy URL** on any scene card — it copies the **full absolute URL**
+3. Hit **Copy URL** on any scene card - it copies the **full absolute URL**
    with your settings baked in, e.g.
    `http://localhost:8080/scenes/Starting%20Soon.html?mins=10`.
 4. In OBS, add a **Browser** source, paste that URL, set **1920×1080**.
@@ -95,7 +95,7 @@ well under a second when shown (it also reconnects and catches up to the current
 live state automatically). With that on you don't need *Refresh browser when
 scene becomes active*. For **Starting Soon / Be Right Back**, flip **Countdown on
 show → Restart** in the control room (adds `?restart=1`) so the timer starts
-fresh each time the scene appears — otherwise it resumes a running countdown.
+fresh each time the scene appears - otherwise it resumes a running countdown.
 
 ### Live push (no URL re-copy)
 
@@ -104,9 +104,9 @@ re-copy a URL every time you want to change something mid-stream. Flip **Live pu
 to OBS** to **On** in the control room and your changes stream to every already-open
 scene source instantly over Server-Sent Events:
 
-- **Topic** lower-third — update or clear it live on the capture scenes.
-- **Standby layout** (01/02/03) — switch centered/editorial/panel live.
-- **Countdown** — reset to N minutes or a target time without refreshing.
+- **Topic** lower-third - update or clear it live on the capture scenes.
+- **Standby layout** (01/02/03) - switch centered/editorial/panel live.
+- **Countdown** - reset to N minutes or a target time without refreshing.
 - **Now playing** is pushed by the music player on the same channel (instant, no
   5s poll).
 
@@ -118,7 +118,7 @@ by live pushes, so you can pin a topic on one source while steering the rest.
 Brand details live in **`config.json`** (no code edits): presenter name/role,
 social handles, brand name/taglines, and the accent gradient. The server injects
 them into every scene, and the accent colors re-theme the overlays. Edit the file
-and refresh — no rebuild needed (mount it into the container to override, per
+and refresh - no rebuild needed (mount it into the container to override, per
 `docker-compose.yml`). Per-scene URL overrides (`?yt= &gh= &bs=`) still win.
 
 ```jsonc
@@ -147,7 +147,7 @@ and refresh — no rebuild needed (mount it into the container to override, per
 
 The music player scans the mounted music folder, reads ID3 tags (falling back to
 `Artist - Title` filenames), and lets you play tracks in the browser. While a
-track plays it writes `Artist — Title` to `public/scenes/now-playing.txt` and
+track plays it writes `Artist - Title` to `public/scenes/now-playing.txt` and
 pushes it over the live channel, so the OBS scenes' **Now Playing** chip (with
 animated EQ bars) updates instantly. Pausing/stopping clears it, so the chip
 auto-hides. (Scenes also keep a 5s file poll as a fallback when the live channel
@@ -160,7 +160,7 @@ isn't available.)
   reflects exactly what's written to `now-playing.txt`.
 
 Any external tool (Spotify/foobar2000/Snip, OBS "Output current song") can write
-that same file instead — the player is just the bundled, no-config option.
+that same file instead - the player is just the bundled, no-config option.
 
 ## Stream Deck +
 
@@ -195,7 +195,7 @@ script are included too.
 | `GET/POST /api/state` | Read / push live scene state (topic, variant, countdown, track) |
 | `GET /api/events` | Server-Sent Events stream the scenes subscribe to |
 | `GET /api/config` · `GET /scenes/brand.js` | Brand/theme config (JSON / injected JS) |
-| `GET /api/cmd/...` | Stream Deck command shortcuts (topic, variant, countdown, player) — see [`streamdeck/`](streamdeck/README.md) |
+| `GET /api/cmd/...` | Stream Deck command shortcuts (topic, variant, countdown, player) - see [`streamdeck/`](streamdeck/README.md) |
 | `GET /healthz` | Health + connected-scene count |
 
 ---

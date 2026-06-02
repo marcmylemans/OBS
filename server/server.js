@@ -1,5 +1,5 @@
 /* ================================================================
-   Mylemans Online — OBS Scene Pack server
+   Mylemans Online - OBS Scene Pack server
 
    - Serves the OBS scene control room + all browser-source scenes
      at /scenes  (so the relative now-playing.txt / assets work).
@@ -75,7 +75,7 @@ function loadBrand() {
 /* ================================================================
    LIVE SCENE STATE  (broadcast over SSE)
 
-   topic / variant / countdown are *overrides*: null means "no opinion —
+   topic / variant / countdown are *overrides*: null means "no opinion -
    the scene keeps its own URL/baked value". They only become non-null when
    the control room actively pushes them (Live push on), so connecting
    scenes are never clobbered by defaults. track is always a string
@@ -180,7 +180,7 @@ async function walkMusic(dir = MUSIC_DIR, base = MUSIC_DIR, out = []) {
 
 function fromFilename(rel) {
   const name = path.basename(rel, path.extname(rel)).replace(/_/g, " ").trim();
-  const m = name.match(/^\s*(.+?)\s*[-–—]\s*(.+?)\s*$/);
+  const m = name.match(/^\s*(.+?)\s*[-\u2013\u2014]\s*(.+?)\s*$/);   // split on hyphen / en / em dash
   if (m) return { artist: m[1].trim(), title: m[2].trim() };
   return { artist: "", title: name };
 }
@@ -292,7 +292,7 @@ app.post("/api/now-playing", async (req, res) => {
 });
 
 /* ================================================================
-   STREAM DECK COMMAND ENDPOINTS  (simple GET — easy to bind from
+   STREAM DECK COMMAND ENDPOINTS  (simple GET - easy to bind from
    Bitfocus Companion, a web-request plugin, or a browser)
    ================================================================ */
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
@@ -363,7 +363,7 @@ app.listen(PORT, () => {
   console.log(`OBS Scene Pack server running on http://localhost:${PORT}`);
   console.log(`  Control room : http://localhost:${PORT}/scenes/`);
   console.log(`  Music player : http://localhost:${PORT}/player/`);
-  console.log(`  Music folder : ${MUSIC_DIR}${fs.existsSync(MUSIC_DIR) ? "" : "  (not found — mount a volume here)"}`);
+  console.log(`  Music folder : ${MUSIC_DIR}${fs.existsSync(MUSIC_DIR) ? "" : "  (not found - mount a volume here)"}`);
   console.log(`  Config file  : ${CONFIG_FILE}${fs.existsSync(CONFIG_FILE) ? "" : "  (using built-in defaults)"}`);
   console.log(`  now-playing  : ${NOW_PLAYING_FILE}`);
 });

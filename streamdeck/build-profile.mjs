@@ -17,7 +17,7 @@ import { execFileSync } from "node:child_process";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /* Stream Deck + device model code. If the app refuses the import, this is the
-   most likely thing to change — known codes incl. 20GAA9901 (Stream Deck),
+   most likely thing to change - known codes incl. 20GAA9901 (Stream Deck),
    20GAT9901 (XL), 20GBA9901 (MK.2). Falls back to manual setup otherwise. */
 const DEVICE_MODEL = "20GBA9901";
 const PROFILE_UUID = "C0FFEE00-0BSP-4ACE-9000-OBSSCENEPACK1";

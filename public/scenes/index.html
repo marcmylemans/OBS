@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>OBS Scene Pack — Mylemans Online</title>
+<title>OBS Scene Pack - Mylemans Online</title>
 <link rel="stylesheet" href="overlay.css"/>
 <style>
   html { overflow: auto; height: auto; }
@@ -154,7 +154,7 @@
     </div>
     <div class="field">
       <label>Now playing (preview)</label>
-      <input type="text" id="track" placeholder="Artist — Title"/>
+      <input type="text" id="track" placeholder="Artist - Title"/>
     </div>
     <div class="field">
       <label>Standby layout</label>
@@ -178,7 +178,7 @@
         <button data-live="1">On</button>
       </div>
     </div>
-    <p class="hint" id="liveHint">Changes update the previews live and bake into each scene's <b>Copy URL</b>. Turn on <b>Live push</b> to update already-open OBS sources instantly — topic, standby layout and countdown — without re-copying URLs. Webcam frame sits bottom-right at <b>1412, 773 · 460×259</b>.</p>
+    <p class="hint" id="liveHint">Changes update the previews live and bake into each scene's <b>Copy URL</b>. Turn on <b>Live push</b> to update already-open OBS sources instantly - topic, standby layout and countdown - without re-copying URLs. Webcam frame sits bottom-right at <b>1412, 773 · 460×259</b>.</p>
   </div>
 
   <div id="groups"></div>
@@ -188,27 +188,27 @@
     <h2>Adding a scene to OBS</h2>
     <div class="grid2">
       <ol>
-        <li>Add a <b>Browser</b> source and paste the scene's <b>Copy URL</b> into the <b>URL</b> field (e.g. <code>http://…:8080/scenes/Starting%20Soon.html?mins=10</code>) — your settings bake right in.</li>
+        <li>Add a <b>Browser</b> source and paste the scene's <b>Copy URL</b> into the <b>URL</b> field (e.g. <code>http://…:8080/scenes/Starting%20Soon.html?mins=10</code>) - your settings bake right in.</li>
         <li>Set <b>Width 1920</b>, <b>Height 1080</b>. Leave the background transparent.</li>
-        <li>Tick <code>Shutdown source when not visible</code> on every overlay — only the active scene then holds a live connection (and uses CPU), and it reloads in well under a second when shown. No need for <code>Refresh when scene becomes active</code>.</li>
+        <li>Tick <code>Shutdown source when not visible</code> on every overlay - only the active scene then holds a live connection (and uses CPU), and it reloads in well under a second when shown. No need for <code>Refresh when scene becomes active</code>.</li>
         <li>Layer the source <b>above</b> your screen / webcam captures.</li>
       </ol>
       <ol>
-        <li><b>Starting Soon / Be Right Back:</b> with <i>Shutdown source when not visible</i> on, set <b>Countdown on show → Restart</b> (above) so the timer starts fresh every time the scene appears — ideal for <b>Be Right Back</b>. Leave it on <b>Resume</b> to instead continue a running countdown across scene switches.</li>
+        <li><b>Starting Soon / Be Right Back:</b> with <i>Shutdown source when not visible</i> on, set <b>Countdown on show → Restart</b> (above) so the timer starts fresh every time the scene appears - ideal for <b>Be Right Back</b>. Leave it on <b>Resume</b> to instead continue a running countdown across scene switches.</li>
         <li><b>Just Chatting (Stream):</b> camera fills the frame underneath; the chat dock sits right at <b>x 1458, y 352 · 396×528</b>.</li>
-        <li><b>Screensharing + Webcam (Stream &amp; Record):</b> the optimized rail keeps your screen clear — scale your display capture into <b>x 36, y 84 · 1392×960</b> and place the camera at <b>x 1452, y 801 · 432×243</b> (same spot in both scenes). On the stream scene, drop your chat widget at <b>x 1470, y 136 · 396×635</b>.</li>
-        <li><b>Screensharing (Record, no cam):</b> full-screen — place your display capture at the full <b>1920×1080</b>; overlay chrome stays in the corners only.</li>
+        <li><b>Screensharing + Webcam (Stream &amp; Record):</b> the optimized rail keeps your screen clear - scale your display capture into <b>x 36, y 84 · 1392×960</b> and place the camera at <b>x 1452, y 801 · 432×243</b> (same spot in both scenes). On the stream scene, drop your chat widget at <b>x 1470, y 136 · 396×635</b>.</li>
+        <li><b>Screensharing (Record, no cam):</b> full-screen - place your display capture at the full <b>1920×1080</b>; overlay chrome stays in the corners only.</li>
       </ol>
     </div>
     <h2 style="margin-top:26px">Now playing &amp; chat</h2>
     <div class="grid2">
       <ol>
-        <li><b>Now playing</b> auto-reads <code>now-playing.txt</code> next to the scenes. The bundled <a href="/player/" style="color:var(--sky-400)">🎵 Music Player</a> writes it for you — play a track and the chip updates within 5s and hides when paused/stopped. (Any external tool — Spotify/foobar2000/Snip, OBS "Output current song" — can also write that file.)</li>
+        <li><b>Now playing</b> auto-reads <code>now-playing.txt</code> next to the scenes. The bundled <a href="/player/" style="color:var(--sky-400)">🎵 Music Player</a> writes it for you - play a track and the chip updates within 5s and hides when paused/stopped. (Any external tool - Spotify/foobar2000/Snip, OBS "Output current song" - can also write that file.)</li>
         <li>Prefer a fixed label? Use <code>?track=Artist - Title</code> in the source URL instead.</li>
       </ol>
       <ol>
         <li><b>Chat</b> shows a branded frame; add your real chat as a <i>separate</i> transparent Browser source (StreamElements / nightbot / your YouTube–Twitch widget) positioned over the coordinates above.</li>
-        <li>Chat, Now playing, the LIVE badge and the clock appear on <b>streaming</b> scenes only. <b>Recording</b> scenes are deliberately minimal — same style, just brand + the capture frames — since you'll source-record the screen/webcam separately.</li>
+        <li>Chat, Now playing, the LIVE badge and the clock appear on <b>streaming</b> scenes only. <b>Recording</b> scenes are deliberately minimal - same style, just brand + the capture frames - since you'll source-record the screen/webcam separately.</li>
       </ol>
     </div>
   </div>
@@ -252,7 +252,7 @@ function srcFor(sc) {        // for the preview iframe (adds demo backdrop on tr
   const pre = sc.transparent ? ("demo=1" + (q ? "&" : "")) : "";
   return encodeURI(sc.f) + "?" + pre + q + "&_=" + Date.now();
 }
-function urlFor(sc) {        // for OBS — absolute, copy-paste ready
+function urlFor(sc) {        // for OBS - absolute, copy-paste ready
   const q = baseQS(sc.standby);
   const abs = new URL(encodeURI(sc.f), location.href).href;
   return abs + (q ? "?" + q : "");
@@ -376,7 +376,7 @@ async function pollLive() {
   try {
     const d = await (await fetch("/healthz")).json();
     document.getElementById("liveHint").innerHTML =
-      `<b style="color:var(--sky-400)">● Live push on</b> — topic, standby layout &amp; countdown stream instantly to <b>${d.clients}</b> open scene source(s). Now playing is driven by the music player.`;
+      `<b style="color:var(--sky-400)">● Live push on</b> - topic, standby layout &amp; countdown stream instantly to <b>${d.clients}</b> open scene source(s). Now playing is driven by the music player.`;
   } catch (e) {}
 }
 function setLivePush(on) {

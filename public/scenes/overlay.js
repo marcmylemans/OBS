@@ -1,5 +1,5 @@
 /* ================================================================
-   Mylemans Online — OBS Overlay System :: shared engine
+   Mylemans Online - OBS Overlay System :: shared engine
    ================================================================ */
 (function () {
   const OBS = {};
@@ -179,7 +179,7 @@
 
   /* ---------- Live control channel (Server-Sent Events) ---------- */
   OBS.connectLive = function (onState) {
-    if (OBS.isDemo) return;                                                  // preview (e.g. control-room iframes) — don't hold a connection
+    if (OBS.isDemo) return;                                                  // preview (e.g. control-room iframes) - don't hold a connection
     if (location.protocol === "file:" || typeof EventSource === "undefined") return; // local file: no server
     const open = () => {
       try {
@@ -189,7 +189,7 @@
           try { onState(s); } catch (_) {}
         });
         OBS._es = es;
-      } catch (e) { /* not served by our server — stay static */ }
+      } catch (e) { /* not served by our server - stay static */ }
     };
     /* Open after `load` so the SSE connection doesn't pin the browser/OBS
        tab in a perpetual "loading" state. */

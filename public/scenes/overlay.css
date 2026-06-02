@@ -1,5 +1,5 @@
 /* ================================================================
-   Mylemans Online — OBS Overlay System
+   Mylemans Online - OBS Overlay System
    Shared styles for all scenes. Designed at 1920×1080.
    ================================================================ */
 
@@ -385,7 +385,7 @@ html, body {
 .scr-desk .code .p { color: #c0a3ff; }
 
 /* ======================================================
-   DEMO BACKDROP (preview only; ?demo=1) — never shown in OBS
+   DEMO BACKDROP (preview only; ?demo=1) - never shown in OBS
    ====================================================== */
 .demo { position: absolute; inset: 0; display: none; z-index: -1; }
 .stage[data-demo="1"] .demo { display: block; }

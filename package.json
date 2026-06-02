@@ -1,7 +1,7 @@
 {
   "name": "obs-scene-server",
   "version": "1.0.0",
-  "description": "Web server for the Mylemans Online OBS Scene Pack — serves the scene control room and a Spotify-styled music player that drives now-playing.txt",
+  "description": "Web server for the Mylemans Online OBS Scene Pack - serves the scene control room and a Spotify-styled music player that drives now-playing.txt",
   "type": "module",
   "main": "server/server.js",
   "scripts": {

@@ -1,5 +1,5 @@
 /* ================================================================
-   Standby renderer — builds the active variant for a standby scene.
+   Standby renderer - builds the active variant for a standby scene.
    Usage:  renderStandby({ eyebrow, title, subtext, countdown, done, mins });
    The live control channel can switch variant and reset the countdown
    without an OBS source refresh.
@@ -73,7 +73,7 @@ function renderStandby(cfg) {
   let lastCd = null;
 
   /* Live control: switch standby layout and reset the countdown on the fly.
-     variant/countdown are overrides — only applied when non-null, and the
+     variant/countdown are overrides - only applied when non-null, and the
      countdown is only reset when it actually changes (so a topic edit in the
      control room doesn't keep restarting the timer). */
   OBS.connectLive((s) => {

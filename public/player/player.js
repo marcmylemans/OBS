@@ -1,6 +1,6 @@
 /* ================================================================
-   Music player logic — scans /api/tracks, plays audio, and pushes
-   the current "Artist — Title" to the OBS now-playing.txt.
+   Music player logic - scans /api/tracks, plays audio, and pushes
+   the current "Artist - Title" to the OBS now-playing.txt.
    ================================================================ */
 (function () {
   const audio = document.getElementById("audio");
@@ -37,7 +37,7 @@
     const sec = Math.floor(s % 60);
     return `${m}:${String(sec).padStart(2, "0")}`;
   };
-  const label = (t) => (t.artist ? `${t.artist} — ${t.title}` : t.title);
+  const label = (t) => (t.artist ? `${t.artist} - ${t.title}` : t.title);
 
   /* ---------- now-playing.txt sync ---------- */
   async function pushNowPlaying(text) {
@@ -49,7 +49,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text })
       });
-    } catch { /* server offline — ignore */ }
+    } catch { /* server offline - ignore */ }
     if (text) { npStatus.textContent = "OBS: " + text; npStatus.className = "np-status on"; }
     else { npStatus.textContent = "OBS: idle"; npStatus.className = "np-status off"; }
   }
@@ -78,7 +78,7 @@
           </div>
         </div>
         <div class="r-album">${esc(t.album || "")}</div>
-        <div class="r-dur">${t.duration ? fmt(t.duration) : "—"}</div>`;
+        <div class="r-dur">${t.duration ? fmt(t.duration) : "-"}</div>`;
       row.addEventListener("click", () => playIndex(i));
       listEl.appendChild(row);
     });
@@ -197,7 +197,7 @@
       es.addEventListener("command", (e) => { try { applyCommand(JSON.parse(e.data)); } catch (_) {} });
     } catch (_) {}
   }
-  /* Open the SSE stream only after `load` — an SSE connection opened during
+  /* Open the SSE stream only after `load` - an SSE connection opened during
      page load keeps the browser tab's loading spinner running indefinitely. */
   if (document.readyState === "complete") setTimeout(openCommandStream, 0);
   else window.addEventListener("load", () => setTimeout(openCommandStream, 0));
