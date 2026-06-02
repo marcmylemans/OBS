@@ -201,7 +201,7 @@
       </ol>
       <ol>
         <li><b>Chat</b> shows a branded frame; add your real chat as a <i>separate</i> transparent Browser source (StreamElements / nightbot / your YouTube–Twitch widget) positioned over the coordinates above.</li>
-        <li>Chat &amp; Now playing appear on streaming scenes only — standby and recording stay clean (music chip still available on recordings if a track is set).</li>
+        <li>Chat, Now playing, the LIVE badge and the clock appear on <b>streaming</b> scenes only. <b>Recording</b> scenes are deliberately minimal — same style, just brand + the capture frames — since you'll source-record the screen/webcam separately.</li>
       </ol>
     </div>
   </div>
@@ -220,9 +220,9 @@ const SCENES = {
     { f: "Screenshare + Webcam (Stream).html", t: "Screensharing + Webcam", s: "Optimized rail · screen + chat over cam",  tag: "live", standby: false, transparent: true }
   ],
   recording: [
-    { f: "Just Chatting (Record).html",        t: "Just Chatting",          s: "Talking-head chrome · clean, no LIVE", tag: "rec", standby: false, transparent: true },
-    { f: "Screenshare + Webcam (Record).html", t: "Screensharing + Webcam", s: "Optimized rail · screen + cam + info card",  tag: "rec", standby: false, transparent: true },
-    { f: "Screenshare (Record).html",          t: "Screensharing",          s: "Full-screen · corner chrome only · no cam", tag: "rec", standby: false, transparent: true }
+    { f: "Just Chatting (Record).html",        t: "Just Chatting",          s: "Minimal · brand + nameplate only", tag: "rec", standby: false, transparent: true },
+    { f: "Screenshare + Webcam (Record).html", t: "Screensharing + Webcam", s: "Minimal rail · screen + cam, clean chrome",  tag: "rec", standby: false, transparent: true },
+    { f: "Screenshare (Record).html",          t: "Screensharing",          s: "Full-screen · brand chip only · no cam", tag: "rec", standby: false, transparent: true }
   ]
 };
 
