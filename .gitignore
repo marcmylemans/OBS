@@ -3,3 +3,5 @@ npm-debug.log*
 .DS_Store
 # local music library (mount your own)
 /music/
+# Stream Deck profile build scratch dir
+streamdeck/build/
