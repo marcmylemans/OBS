@@ -164,7 +164,14 @@
         <button data-v="3">03</button>
       </div>
     </div>
-    <p class="hint">Changes update the previews live and bake into each scene's <b>Copy URL</b>. Webcam frame sits bottom-right at <b>1412, 773 · 460×259</b> — align your camera source to it.</p>
+    <div class="field">
+      <label>Live push to OBS</label>
+      <div class="seg" id="segLive">
+        <button data-live="0" class="on">Off</button>
+        <button data-live="1">On</button>
+      </div>
+    </div>
+    <p class="hint" id="liveHint">Changes update the previews live and bake into each scene's <b>Copy URL</b>. Turn on <b>Live push</b> to update already-open OBS sources instantly — topic, standby layout and countdown — without re-copying URLs. Webcam frame sits bottom-right at <b>1412, 773 · 460×259</b>.</p>
   </div>
 
   <div id="groups"></div>
@@ -304,6 +311,7 @@ function refreshAll() {
     const open = card.querySelector("[data-open]");
     open.href = encodeURI(card._sc.f) + "?" + (card._sc.transparent ? "demo=1&" : "") + baseQS(card._sc.standby);
   });
+  pushState();
 }
 function syncV() {
   document.querySelectorAll("#segV button").forEach((b) => b.classList.toggle("on", +b.dataset.v === cfg.v));
@@ -336,6 +344,37 @@ document.getElementById("mins").addEventListener("input", (e) => { cfg.mins = e.
 document.getElementById("until").addEventListener("input", (e) => { cfg.until = e.target.value; debounceRefresh(); });
 document.getElementById("topic").addEventListener("input", (e) => { cfg.topic = e.target.value; debounceRefresh(); });
 document.getElementById("track").addEventListener("input", (e) => { cfg.track = e.target.value; debounceRefresh(); });
+
+/* ---- Live push to OBS (Server-Sent Events on the scene side) ---- */
+const LIVE_HINT_OFF = document.getElementById("liveHint").innerHTML;
+let livePush = false, liveTimer = null;
+function pushState() {
+  if (!livePush) return;
+  fetch("/api/state", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      topic: cfg.topic, variant: cfg.v,
+      countdown: { mode: cfg.mode, mins: cfg.mins, until: cfg.until }
+    })
+  }).catch(() => {});
+}
+async function pollLive() {
+  try {
+    const d = await (await fetch("/healthz")).json();
+    document.getElementById("liveHint").innerHTML =
+      `<b style="color:var(--sky-400)">● Live push on</b> — topic, standby layout &amp; countdown stream instantly to <b>${d.clients}</b> open scene source(s). Now playing is driven by the music player.`;
+  } catch (e) {}
+}
+function setLivePush(on) {
+  livePush = on;
+  document.querySelectorAll("#segLive button").forEach((x) => x.classList.toggle("on", (+x.dataset.live === 1) === on));
+  if (on) { pushState(); pollLive(); liveTimer = setInterval(pollLive, 3000); }
+  else { clearInterval(liveTimer); document.getElementById("liveHint").innerHTML = LIVE_HINT_OFF; }
+}
+document.getElementById("segLive").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  setLivePush(b.dataset.live === "1");
+});
 
 render();
 </script>

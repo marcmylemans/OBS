@@ -1,0 +1,19 @@
+{
+  "brandName": "Mylemans Online",
+  "tagline": "Homelab · Automation",
+  "standbyTagline": "Homelab · Windows Server · Automation",
+  "site": "mylemans.online",
+  "presenter": {
+    "name": "Marc Mylemans",
+    "role": "Systems Engineer · Mylemans Online"
+  },
+  "handles": {
+    "youtube": "@mylemansonline",
+    "github": "mylemansonline",
+    "bluesky": "mylemans.online"
+  },
+  "accent": {
+    "from": "#2563eb",
+    "to": "#38bdf8"
+  }
+}

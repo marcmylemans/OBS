@@ -35,37 +35,41 @@ function nowPlayingChip() {
 }
 
 /* recording rail: clean info card where chat would sit on a stream.
-   The "Now covering" block is shown only when a topic is set. */
+   The "Now covering" block stays in the DOM (hidden when no topic) so the
+   live channel can show/update it. */
 function railInfo(topic) {
+  const hide = topic ? "" : ' style="display:none"';
   return `<div class="rail-info">
-      ${topic ? `<div class="ri-topic">
+      <div class="ri-topic js-topic-wrap"${hide}>
         <span class="k">Now covering</span>
-        <span class="v">${topic}</span>
+        <span class="v js-topic">${topic}</span>
       </div>
-      <div class="ri-div"></div>` : ""}
+      <div class="ri-div js-topic-wrap"${hide}></div>
       <div class="ri-socials">${OBS.socialChips()}</div>
       <div class="ri-brand">
         <div class="brandmark">
           <img src="assets/logo-dark.png" alt=""/>
-          <div class="wm"><b>Mylemans Online</b><span>mylemans.online</span></div>
+          <div class="wm"><b>${OBS.brand.brandName}</b><span>${OBS.brand.site}</span></div>
         </div>
       </div>
     </div>`;
 }
 
-/* reads ?track=, else polls a sibling now-playing.txt every 5s. Hides when empty. */
+/* reads ?track=, else polls a sibling now-playing.txt every 5s. Hides when
+   empty. Returns { set, locked }; the live channel drives set() unless a
+   fixed ?track was supplied. */
 function setupNowPlaying() {
   const el = document.querySelector("[data-np]");
-  if (!el) return;
+  if (!el) return null;
   const track = el.querySelector(".np-track");
   const set = (txt) => {
     txt = (txt || "").trim();
     if (txt) { track.textContent = txt; el.style.display = ""; }
     else { el.style.display = "none"; }
   };
-  if (OBS.isDemo) { set(OBS.q("track", "Tycho — Awake")); return; }
+  if (OBS.isDemo) { set(OBS.q("track", "Tycho — Awake")); return { set, locked: true }; }
   const param = OBS.q("track", null);
-  if (param) { set(param); return; }
+  if (param != null) { set(param); return { set, locked: true }; }
   async function poll() {
     try {
       const r = await fetch("now-playing.txt?_=" + Date.now(), { cache: "no-store" });
@@ -74,6 +78,7 @@ function setupNowPlaying() {
   }
   poll();
   setInterval(poll, 5000);
+  return { set, locked: false };
 }
 
 function renderScene(cfg) {
@@ -82,9 +87,11 @@ function renderScene(cfg) {
   const isShare = cfg.mode === "share";
   const isRail = cfg.layout === "rail";
   cfg.demo = OBS.isDemo;
+  const brand = OBS.brand;
 
-  /* Effective topic: ?topic= URL param overrides the scene default.
-     When nothing is set, the topic pill is hidden entirely. */
+  /* Effective topic: ?topic= URL param overrides the scene default. When a
+     topic is set via URL it is "locked" (live updates won't clear it). */
+  const topicLocked = OBS.q("topic", null) != null;
   const topic = (OBS.q("topic", cfg.topic || "") || "").trim();
 
   const clock = `<div class="clock"><span class="dot"></span><span data-t>00:00</span></div>`;
@@ -94,22 +101,24 @@ function renderScene(cfg) {
 
   const brandSmall = `
     <div class="brandmark">
-      <img src="assets/logo-dark.png" alt="Mylemans Online"/>
-      <div class="wm"><b>Mylemans Online</b><span>Homelab · Automation</span></div>
+      <img src="assets/logo-dark.png" alt="${brand.brandName}"/>
+      <div class="wm"><b>${brand.brandName}</b><span>${brand.tagline}</span></div>
     </div>`;
 
-  const topicPill = topic ? `
-    <div class="topic">
+  /* Topic pill always rendered (hidden when empty) so the live channel can
+     show/hide/update it. */
+  const topicPill = `
+    <div class="topic js-topic-wrap"${topic ? "" : ' style="display:none"'}>
       <span class="k">On screen</span><span class="div"></span>
-      <span class="v">${topic}</span>
-    </div>` : "";
+      <span class="v js-topic">${topic}</span>
+    </div>`;
 
   const nameplate = `
     <div class="nameplate">
       <div class="bar"></div>
       <div class="np-body">
-        <span class="np-name">${cfg.name || "Marc Mylemans"}</span>
-        <span class="np-role">${cfg.role || "Systems Engineer · Mylemans Online"}</span>
+        <span class="np-name">${cfg.name || brand.presenter.name}</span>
+        <span class="np-role">${cfg.role || brand.presenter.role}</span>
       </div>
     </div>`;
 
@@ -128,7 +137,7 @@ function renderScene(cfg) {
       ${live ? '<div class="cam-live"><span class="pulse"></span><b>LIVE</b></div>' : ''}
       <div class="cam-tab">
         <img class="m" src="assets/logo-dark.png" alt=""/>
-        <b>${cfg.name || "Marc Mylemans"}</b><span>Mylemans Online</span>
+        <b>${cfg.name || brand.presenter.name}</b><span>${brand.brandName}</span>
       </div>
     </div>`;
 
@@ -144,25 +153,31 @@ function renderScene(cfg) {
       <span class="p">PS</span> C:\\&gt; _</div>
     </div>`;
 
+  const wordchip = `
+    <div class="wordchip">
+      <img src="assets/logo-dark.png" alt=""/>
+      <b>${cfg.name || brand.brandName}</b><span>${brand.site}</span>
+    </div>`;
+
   let html = "";
 
   if (isShare && cfg.layout === "minimal") {
     /* ---------- FULL-SCREEN SHARE (no cam) — corner chrome only ---------- */
     html = `
       ${cfg.demo ? `<div class="demo desk"><div class="win main">${deskInner}</div></div>` : ""}
-      ${topic ? `<div class="mini tl">${topicPill}</div>` : ""}
+      <div class="mini tl">${topicPill}</div>
       <div class="mini tr">
         <div class="statusmini clock"><span class="rdot"></span><b>REC</b><span class="div"></span><span class="t" data-t>00:00</span></div>
       </div>
       <div class="mini bl">
-        <div class="wordchip"><img src="assets/logo-dark.png" alt=""/><b>Mylemans Online</b><span>mylemans.online</span></div>
+        <div class="wordchip"><img src="assets/logo-dark.png" alt=""/><b>${brand.brandName}</b><span>${brand.site}</span></div>
       </div>
       ${cfg.nowplaying ? `<div class="mini br">${nowPlayingChip()}</div>` : ""}`;
   } else if (isShare && isRail) {
     /* ---------- OPTIMIZED RAIL SCREENSHARE ---------- */
     html = `
       <div class="brandbar">
-        <div class="bb-mark"><img src="assets/logo-dark.png" alt=""/><b>Mylemans Online</b></div>
+        <div class="bb-mark"><img src="assets/logo-dark.png" alt=""/><b>${brand.brandName}</b></div>
         ${topicPill}
         <div class="spacer"></div>
         ${cfg.nowplaying ? nowPlayingChip() : ""}
@@ -181,18 +196,14 @@ function renderScene(cfg) {
     html = `
       ${cfg.demo ? `<div class="demo desk"><div class="win main">${deskInner}</div></div>` : ""}
       <div class="brandbar">
-        <div class="bb-mark"><img src="assets/logo-dark.png" alt=""/><b>Mylemans Online</b></div>
+        <div class="bb-mark"><img src="assets/logo-dark.png" alt=""/><b>${brand.brandName}</b></div>
         ${topicPill}
         <div class="spacer"></div>
         ${cfg.nowplaying ? nowPlayingChip() : socialPills}
         ${statusBadge}
         ${clock}
       </div>
-      ${cfg.cam ? camFrame("br") : `
-        <div class="wordchip">
-          <img src="assets/logo-dark.png" alt=""/>
-          <b>${cfg.name || "Marc Mylemans"}</b><span>mylemans.online</span>
-        </div>`}`;
+      ${cfg.cam ? camFrame("br") : wordchip}`;
   } else {
     /* ---------- TALKING HEAD ---------- */
     const blStack = `<div class="scene-bl"><div class="stackcol">${cfg.nowplaying ? nowPlayingChip() : ""}${nameplate}</div></div>`;
@@ -215,5 +226,14 @@ function renderScene(cfg) {
     `<div class="confighint">URL options: ?topic=… · ?track=Artist - Title (or edit now-playing.txt) · ?demo=1</div>`);
 
   OBS.boot();
-  if (cfg.nowplaying) setupNowPlaying();
+  let np = null;
+  if (cfg.nowplaying) np = setupNowPlaying();
+
+  /* Live control channel: update topic + now-playing as the control room /
+     player push changes (no source refresh needed). topic is an override —
+     only applied when non-null, and never when pinned via ?topic=. */
+  OBS.connectLive((s) => {
+    if (!topicLocked && s.topic != null) OBS.setTopic(s.topic);
+    if (np && !np.locked && s.track != null) np.set(s.track);
+  });
 }

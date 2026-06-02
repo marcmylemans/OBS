@@ -87,6 +87,39 @@ reused across runs.
 Placement coordinates for webcam / chat / screen-capture regions are documented
 right inside the control room's setup section.
 
+### Live push (no URL re-copy)
+
+Baking settings into the URL is great for first-time setup, but you don't have to
+re-copy a URL every time you want to change something mid-stream. Flip **Live push
+to OBS** to **On** in the control room and your changes stream to every already-open
+scene source instantly over Server-Sent Events:
+
+- **Topic** lower-third — update or clear it live on the capture scenes.
+- **Standby layout** (01/02/03) — switch centered/editorial/panel live.
+- **Countdown** — reset to N minutes or a target time without refreshing.
+- **Now playing** is pushed by the music player on the same channel (instant, no
+  5s poll).
+
+A URL that explicitly sets `?topic=` is treated as locked and won't be overwritten
+by live pushes, so you can pin a topic on one source while steering the rest.
+
+### Branding & theming
+
+Brand details live in **`config.json`** (no code edits): presenter name/role,
+social handles, brand name/taglines, and the accent gradient. The server injects
+them into every scene, and the accent colors re-theme the overlays. Edit the file
+and refresh — no rebuild needed (mount it into the container to override, per
+`docker-compose.yml`). Per-scene URL overrides (`?yt= &gh= &bs=`) still win.
+
+```jsonc
+{
+  "brandName": "Mylemans Online",
+  "presenter": { "name": "Marc Mylemans", "role": "Systems Engineer · Mylemans Online" },
+  "handles": { "youtube": "@mylemansonline", "github": "mylemansonline", "bluesky": "mylemans.online" },
+  "accent": { "from": "#2563eb", "to": "#38bdf8" }
+}
+```
+
 ### Configurable URL parameters
 
 | Param | Scenes | Effect |
@@ -103,9 +136,11 @@ right inside the control room's setup section.
 
 The music player scans the mounted music folder, reads ID3 tags (falling back to
 `Artist - Title` filenames), and lets you play tracks in the browser. While a
-track plays it writes `Artist — Title` to `public/scenes/now-playing.txt`; the
-OBS scenes poll that file every 5s and show the **Now Playing** chip (with
-animated EQ bars). Pausing/stopping clears it, so the chip auto-hides.
+track plays it writes `Artist — Title` to `public/scenes/now-playing.txt` and
+pushes it over the live channel, so the OBS scenes' **Now Playing** chip (with
+animated EQ bars) updates instantly. Pausing/stopping clears it, so the chip
+auto-hides. (Scenes also keep a 5s file poll as a fallback when the live channel
+isn't available.)
 
 - **Map your music:** mount any folder to `/music` in the container (see the
   volume in `docker-compose.yml`). Nested subfolders are scanned recursively.
@@ -123,6 +158,7 @@ that same file instead — the player is just the bundled, no-config option.
 | `PORT` | `8080` | HTTP port |
 | `MUSIC_DIR` | `/music` | Folder scanned for music |
 | `SCENES_DIR` | `public/scenes` | Where `now-playing.txt` is written |
+| `CONFIG_FILE` | `config.json` | Brand/theme config (re-read per request) |
 
 ### HTTP routes
 
@@ -135,6 +171,10 @@ that same file instead — the player is just the bundled, no-config option.
 | `GET /api/tracks` | Library with parsed metadata |
 | `GET /api/cover?path=…` | Embedded album art |
 | `GET/POST /api/now-playing` | Read / write the Now Playing text |
+| `GET/POST /api/state` | Read / push live scene state (topic, variant, countdown, track) |
+| `GET /api/events` | Server-Sent Events stream the scenes subscribe to |
+| `GET /api/config` · `GET /scenes/brand.js` | Brand/theme config (JSON / injected JS) |
+| `GET /healthz` | Health + connected-scene count |
 
 ---
 
