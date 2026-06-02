@@ -1,22 +1,31 @@
+# syntax=docker/dockerfile:1
 # Mylemans Online — OBS Scene Pack server
-FROM node:20-alpine
 
+# ---- deps: install node_modules once on the BUILD platform ----
+# Our dependencies (express, music-metadata) are pure JS with no native
+# addons, so the installed tree is arch-independent. Pinning this stage to
+# $BUILDPLATFORM avoids running npm under slow QEMU emulation for arm64.
+FROM --platform=$BUILDPLATFORM node:20-alpine AS deps
 WORKDIR /app
+COPY package.json package-lock.json ./
+# BuildKit cache mount keeps the npm cache warm across builds.
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --omit=dev
 
-# Install dependencies first for better layer caching
+# ---- runner: final per-architecture image ----
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production \
+    PORT=8080 \
+    MUSIC_DIR=/music
+
+COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
-RUN npm install --omit=dev
-
-# App source
 COPY server ./server
 COPY public ./public
 
 # Mount your music library here (read-only is fine)
 VOLUME ["/music"]
-
-ENV PORT=8080 \
-    MUSIC_DIR=/music \
-    NODE_ENV=production
 
 EXPOSE 8080
 

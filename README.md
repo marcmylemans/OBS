@@ -51,6 +51,27 @@ npm install
 MUSIC_DIR=/path/to/your/music npm start
 ```
 
+### Pre-built image (GitHub Container Registry)
+
+A GitHub Actions workflow (`.github/workflows/docker-build.yml`) builds and
+publishes a **multi-arch image** (`linux/amd64` + `linux/arm64`, so it runs on
+PCs/servers as well as Raspberry Pi / Apple Silicon) to GHCR on every push to
+`main` and on `v*` tags. Pull it instead of building locally — Docker
+auto-selects the right architecture:
+
+```bash
+docker run -d -p 8080:8080 -v /path/to/your/music:/music:ro \
+  ghcr.io/marcmylemans/obs:latest
+```
+
+Tags follow the branch/semver (`latest`, `v1.2.3`, `1.2`, …). The package must
+be made public (or you must `docker login ghcr.io`) to pull it.
+
+The build is optimized for speed: dependencies (pure-JS) are installed once on
+the build platform and copied into each arch — avoiding slow QEMU `npm` runs —
+and both the BuildKit layer cache (GitHub Actions cache) and the npm cache are
+reused across runs.
+
 ## Using the scenes in OBS
 
 1. Open the **control room** at `http://localhost:8080/scenes/`.
