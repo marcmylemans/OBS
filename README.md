@@ -151,6 +151,16 @@ isn't available.)
 Any external tool (Spotify/foobar2000/Snip, OBS "Output current song") can write
 that same file instead — the player is just the bundled, no-config option.
 
+## Stream Deck +
+
+A ready-made layout for the **Stream Deck +** (8 keys + touch strip + 4 dials)
+lives in [`streamdeck/`](streamdeck/README.md): scene switching on the keys, and
+the four dials mapped to **music volume**, **OBS mic**, **OBS desktop** and the
+**standby countdown**. The app exposes simple `GET /api/cmd/...` endpoints so the
+deck (via Bitfocus Companion or a web-request plugin) can drive the overlays and
+the music player. An experimental importable `.streamDeckProfile` and a generator
+script are included too.
+
 ## Configuration
 
 | Env var | Default | Purpose |
@@ -174,6 +184,7 @@ that same file instead — the player is just the bundled, no-config option.
 | `GET/POST /api/state` | Read / push live scene state (topic, variant, countdown, track) |
 | `GET /api/events` | Server-Sent Events stream the scenes subscribe to |
 | `GET /api/config` · `GET /scenes/brand.js` | Brand/theme config (JSON / injected JS) |
+| `GET /api/cmd/...` | Stream Deck command shortcuts (topic, variant, countdown, player) — see [`streamdeck/`](streamdeck/README.md) |
 | `GET /healthz` | Health + connected-scene count |
 
 ---

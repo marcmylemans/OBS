@@ -163,12 +163,39 @@
   seekbar.addEventListener("input", () => {
     if (audio.duration) audio.currentTime = (seekbar.value / 1000) * audio.duration;
   });
-  volume.addEventListener("input", () => {
-    audio.volume = volume.value / 100;
-    volume.style.setProperty("--fill", volume.value + "%");
-  });
-  audio.volume = 1;
-  volume.style.setProperty("--fill", "100%");
+  function setVolume(v) {
+    v = Math.max(0, Math.min(100, Math.round(v)));
+    audio.volume = v / 100;
+    volume.value = v;
+    volume.style.setProperty("--fill", v + "%");
+    try { localStorage.setItem("obs-player-vol", v); } catch (e) {}
+  }
+  volume.addEventListener("input", () => setVolume(+volume.value));
+  let savedVol = 100;
+  try { const s = localStorage.getItem("obs-player-vol"); if (s != null) savedVol = +s; } catch (e) {}
+  setVolume(savedVol);
+
+  /* ---------- remote control (Stream Deck / Companion via SSE) ---------- */
+  function applyCommand(c) {
+    switch (c.action) {
+      case "playpause": togglePlay(); break;
+      case "play": if (audio.paused) togglePlay(); break;
+      case "pause": if (!audio.paused) audio.pause(); break;
+      case "stop": stop(); break;
+      case "next": next(false); break;
+      case "prev": prev(); break;
+      case "volume":
+        if (typeof c.value === "number") setVolume(c.value);
+        else if (typeof c.delta === "number") setVolume((audio.volume * 100) + c.delta);
+        break;
+    }
+  }
+  if (typeof EventSource !== "undefined") {
+    try {
+      const es = new EventSource("/api/events");
+      es.addEventListener("command", (e) => { try { applyCommand(JSON.parse(e.data)); } catch (_) {} });
+    } catch (_) {}
+  }
 
   /* keyboard: space = play/pause, arrows = prev/next */
   document.addEventListener("keydown", (e) => {

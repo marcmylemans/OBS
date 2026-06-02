@@ -92,12 +92,18 @@ try { state.track = fs.readFileSync(NOW_PLAYING_FILE, "utf8").trim(); } catch {}
 
 const sseClients = new Set();
 
-function broadcast() {
-  const payload = `event: state\ndata: ${JSON.stringify(state)}\n\n`;
+function sse(event, data) {
+  const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
   for (const res of sseClients) {
     try { res.write(payload); } catch { /* dropped on next close */ }
   }
 }
+function broadcast() { sse("state", state); }
+/* One-shot commands for the music player (transport / volume). Scenes ignore
+   these; only the player listens for the "command" event. */
+function broadcastCommand(cmd) { sse("command", cmd); }
+
+let cdMins = 10;   // staged standby-countdown minutes (driven by a dial)
 
 async function writeNowPlaying(text) {
   await fsp.mkdir(SCENES_DIR, { recursive: true });
@@ -272,6 +278,62 @@ app.post("/api/now-playing", async (req, res) => {
   } catch (err) {
     res.status(500).json({ ok: false, error: String(err) });
   }
+});
+
+/* ================================================================
+   STREAM DECK COMMAND ENDPOINTS  (simple GET — easy to bind from
+   Bitfocus Companion, a web-request plugin, or a browser)
+   ================================================================ */
+const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+
+/* --- overlay (pushed to scenes via live state) --- */
+app.get("/api/cmd/topic", async (req, res) => {
+  await updateState({ topic: typeof req.query.value === "string" ? req.query.value : "" });
+  res.json({ ok: true, topic: state.topic });
+});
+app.get("/api/cmd/topic/clear", async (_req, res) => {
+  await updateState({ topic: "" });
+  res.json({ ok: true, topic: state.topic });
+});
+app.get("/api/cmd/variant", async (req, res) => {
+  let v;
+  if (req.query.value != null) {
+    v = clamp(parseInt(req.query.value, 10) || 1, 1, 3);
+  } else {
+    const d = req.query.delta != null ? (parseInt(req.query.delta, 10) || 0) : 0;
+    v = (((state.variant || 1) + d - 1) % 3 + 3) % 3 + 1;   // wrap within 1..3
+  }
+  await updateState({ variant: v });
+  res.json({ ok: true, variant: state.variant });
+});
+app.get("/api/cmd/countdown", async (req, res) => {
+  if (req.query.until) {
+    await updateState({ countdown: { mode: "until", until: String(req.query.until) } });
+  } else {
+    if (req.query.mins != null) cdMins = clamp(parseInt(req.query.mins, 10) || 10, 1, 180);
+    else if (req.query.delta != null) cdMins = clamp(cdMins + (parseInt(req.query.delta, 10) || 0), 1, 180);
+    await updateState({ countdown: { mode: "mins", mins: cdMins } });   // live reset for instant feedback
+  }
+  res.json({ ok: true, countdown: state.countdown, cdMins });
+});
+app.get("/api/cmd/countdown/start", async (_req, res) => {
+  await updateState({ countdown: { mode: "mins", mins: cdMins } });
+  res.json({ ok: true, countdown: state.countdown });
+});
+
+/* --- music player remote (broadcast as a one-shot command) --- */
+app.get("/api/cmd/player/:action", (req, res) => {
+  const action = req.params.action;
+  const cmd = { action };
+  if (action === "volume") {
+    if (req.query.value != null) cmd.value = clamp(parseInt(req.query.value, 10) || 0, 0, 100);
+    else if (req.query.delta != null) cmd.delta = parseInt(req.query.delta, 10) || 0;
+  }
+  if (!["playpause", "play", "pause", "next", "prev", "volume", "stop"].includes(action)) {
+    return res.status(400).json({ ok: false, error: "unknown action" });
+  }
+  broadcastCommand(cmd);
+  res.json({ ok: true, sent: cmd, listeners: sseClients.size });
 });
 
 /* ---------- media streaming (Range support for seeking) ---------- */

@@ -89,15 +89,22 @@ function renderScene(cfg) {
   cfg.demo = OBS.isDemo;
   const brand = OBS.brand;
 
+  /* Recording scenes are deliberately minimal: same visual style as the
+     streaming scenes, but no REC badge, clock, now-playing or socials — the
+     screen + webcam are source-recorded separately. */
+  const rec = !live;
+  const showNow = live && cfg.nowplaying;
+
   /* Effective topic: ?topic= URL param overrides the scene default. When a
      topic is set via URL it is "locked" (live updates won't clear it). */
   const topicLocked = OBS.q("topic", null) != null;
   const topic = (OBS.q("topic", cfg.topic || "") || "").trim();
 
   const clock = `<div class="clock"><span class="dot"></span><span data-t>00:00</span></div>`;
+  /* LIVE only on the top bar; nothing on recording. */
   const statusBadge = live
     ? `<div class="live"><span class="pulse"></span><b>LIVE</b></div>`
-    : `<div class="rec"><span class="rdot"></span><b>REC</b></div>`;
+    : "";
 
   const brandSmall = `
     <div class="brandmark">
@@ -134,7 +141,6 @@ function renderScene(cfg) {
     <div class="cam ${pos}">
       <div class="cam-hole"></div>
       <div class="tick tl"></div><div class="tick tr"></div>
-      ${live ? '<div class="cam-live"><span class="pulse"></span><b>LIVE</b></div>' : ''}
       <div class="cam-tab">
         <img class="m" src="assets/logo-dark.png" alt=""/>
         <b>${cfg.name || brand.presenter.name}</b><span>${brand.brandName}</span>
@@ -162,60 +168,62 @@ function renderScene(cfg) {
   let html = "";
 
   if (isShare && cfg.layout === "minimal") {
-    /* ---------- FULL-SCREEN SHARE (no cam) — corner chrome only ---------- */
+    /* ---------- FULL-SCREEN SHARE (no cam) ----------
+       Recording: capture fills the whole frame; only a small brand chip
+       (and a topic pill that stays hidden unless one is pushed live). */
     html = `
-      ${cfg.demo ? `<div class="demo desk"><div class="win main">${deskInner}</div></div>` : ""}
+      ${cfg.demo ? '<div class="demo desk"></div>' : ""}
       <div class="mini tl">${topicPill}</div>
-      <div class="mini tr">
-        <div class="statusmini clock"><span class="rdot"></span><b>REC</b><span class="div"></span><span class="t" data-t>00:00</span></div>
-      </div>
       <div class="mini bl">
         <div class="wordchip"><img src="assets/logo-dark.png" alt=""/><b>${brand.brandName}</b><span>${brand.site}</span></div>
       </div>
-      ${cfg.nowplaying ? `<div class="mini br">${nowPlayingChip()}</div>` : ""}`;
+      ${showNow ? `<div class="mini br">${nowPlayingChip()}</div>` : ""}`;
   } else if (isShare && isRail) {
-    /* ---------- OPTIMIZED RAIL SCREENSHARE ---------- */
+    /* ---------- OPTIMIZED RAIL SCREENSHARE ----------
+       Recording keeps the screen + webcam frames and a minimal brand bar
+       (no now-playing / status / clock / info card). */
     html = `
       <div class="brandbar">
         <div class="bb-mark"><img src="assets/logo-dark.png" alt=""/><b>${brand.brandName}</b></div>
         ${topicPill}
         <div class="spacer"></div>
-        ${cfg.nowplaying ? nowPlayingChip() : ""}
+        ${showNow ? nowPlayingChip() : ""}
         ${statusBadge}
-        ${clock}
+        ${live ? clock : ""}
       </div>
       <div class="screen-frame rail-screen">
         ${cfg.demo ? deskInner : ""}
       </div>
       <div class="rail-col">
-        ${cfg.chat ? chatPanel() : railInfo(topic)}
+        ${cfg.chat ? chatPanel() : (rec ? "" : railInfo(topic))}
         ${cfg.cam ? camFrame("") : ""}
       </div>`;
   } else if (isShare) {
-    /* ---------- FULL-BLEED SCREENSHARE (recording) ---------- */
+    /* ---------- FULL-BLEED SCREENSHARE ---------- */
     html = `
       ${cfg.demo ? `<div class="demo desk"><div class="win main">${deskInner}</div></div>` : ""}
       <div class="brandbar">
         <div class="bb-mark"><img src="assets/logo-dark.png" alt=""/><b>${brand.brandName}</b></div>
         ${topicPill}
         <div class="spacer"></div>
-        ${cfg.nowplaying ? nowPlayingChip() : socialPills}
+        ${showNow ? nowPlayingChip() : (live ? socialPills : "")}
         ${statusBadge}
-        ${clock}
+        ${live ? clock : ""}
       </div>
       ${cfg.cam ? camFrame("br") : wordchip}`;
   } else {
-    /* ---------- TALKING HEAD ---------- */
-    const blStack = `<div class="scene-bl"><div class="stackcol">${cfg.nowplaying ? nowPlayingChip() : ""}${nameplate}</div></div>`;
+    /* ---------- TALKING HEAD ----------
+       Recording: brand mark + nameplate only (no clock / now-playing / socials). */
+    const blStack = `<div class="scene-bl"><div class="stackcol">${showNow ? nowPlayingChip() : ""}${nameplate}</div></div>`;
     const chatDock = cfg.chat ? `<div class="jc-chat">${chatPanel()}</div>` : "";
-    const bottomRight = cfg.chat ? "" : `<div class="scene-br">${socialChips}</div>`;
+    const bottomRight = (cfg.chat || rec) ? "" : `<div class="scene-br">${socialChips}</div>`;
     html = `
       ${cfg.demo ? '<div class="demo face"><div class="silhouette"></div></div>' : ''}
       <div class="vignette"></div>
       <div class="scene-top">
         <div>${live ? statusBadge : brandSmall}</div>
         <div class="center">${topicPill}</div>
-        ${clock}
+        ${live ? clock : ""}
       </div>
       ${blStack}
       ${chatDock}
@@ -227,7 +235,7 @@ function renderScene(cfg) {
 
   OBS.boot();
   let np = null;
-  if (cfg.nowplaying) np = setupNowPlaying();
+  if (showNow) np = setupNowPlaying();
 
   /* Live control channel: update topic + now-playing as the control room /
      player push changes (no source refresh needed). topic is an override —
