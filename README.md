@@ -87,6 +87,16 @@ reused across runs.
 Placement coordinates for webcam / chat / screen-capture regions are documented
 right inside the control room's setup section.
 
+### Recommended OBS source settings
+
+Tick **Shutdown source when not visible** on every overlay browser source: only
+the active scene then holds a live connection and uses CPU, and it reloads in
+well under a second when shown (it also reconnects and catches up to the current
+live state automatically). With that on you don't need *Refresh browser when
+scene becomes active*. For **Starting Soon / Be Right Back**, flip **Countdown on
+show → Restart** in the control room (adds `?restart=1`) so the timer starts
+fresh each time the scene appears — otherwise it resumes a running countdown.
+
 ### Live push (no URL re-copy)
 
 Baking settings into the URL is great for first-time setup, but you don't have to
@@ -124,8 +134,9 @@ and refresh — no rebuild needed (mount it into the container to override, per
 
 | Param | Scenes | Effect |
 | --- | --- | --- |
-| `?mins=10` | standby | Countdown of N minutes (persists across source refresh) |
+| `?mins=10` | standby | Countdown of N minutes (resumes across a source refresh) |
 | `?until=20:30` | standby | Countdown to a wall-clock time |
+| `?restart=1` | standby | Start the countdown fresh on every load instead of resuming (pairs with *Shutdown source when not visible*) |
 | `?v=1\|2\|3` | standby | Standby layout (centered / editorial / panel) |
 | `?topic=...` | capture | On-screen topic lower-third |
 | `?track=Artist - Title` | capture | Fixed Now Playing label (overrides the file) |

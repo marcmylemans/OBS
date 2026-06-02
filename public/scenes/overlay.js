@@ -121,12 +121,17 @@
       return tgt;
     }
 
+    /* ?restart=1 → always start a fresh countdown on load (ignore the saved
+       one). Handy with "Shutdown source when not visible" so the timer
+       restarts every time the scene is shown (e.g. Be Right Back). */
+    const forceRestart = OBS.q("restart", null) === "1";
+
     function initialTarget() {
       const to = OBS.q("to", null);
       if (to) { const t = Date.parse(to); if (!isNaN(t)) return t; }
       const until = OBS.q("until", null);
       if (until) return fromOpts({ mode: "until", until }, false);
-      return fromOpts({ mode: "mins", mins: OBS.q("mins", opts.mins != null ? opts.mins : "10") }, false);
+      return fromOpts({ mode: "mins", mins: OBS.q("mins", opts.mins != null ? opts.mins : "10") }, forceRestart);
     }
 
     target = initialTarget();
