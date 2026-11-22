@@ -22,7 +22,7 @@ function chatPanel(extraClass) {
       ).join("")
     : "";
   return `<div class="chat ${extraClass || ""}">
-      <div class="chat-head">${icon}<b>Live chat</b><span class="src">YouTube</span></div>
+      <div class="chat-head">${icon}<b>Live chat</b><span class="src">${OBS.esc(OBS.brand.chatSource)}</span></div>
       <div class="chat-body">${body}</div>
     </div>`;
 }
@@ -37,22 +37,28 @@ function nowPlayingChip() {
 /* recording rail: clean info card where chat would sit on a stream.
    The "Now covering" block stays in the DOM (hidden when no topic) so the
    live channel can show/update it. */
-function railInfo(topic) {
+function railInfo(topic, minimal) {
   const hide = topic ? "" : ' style="display:none"';
-  return `<div class="rail-info">
+  return `<div class="rail-info${minimal ? " minimal" : ""}">
       <div class="ri-topic js-topic-wrap"${hide}>
         <span class="k">Now covering</span>
-        <span class="v js-topic">${topic}</span>
+        <span class="v js-topic">${OBS.esc(topic)}</span>
       </div>
-      <div class="ri-div js-topic-wrap"${hide}></div>
-      <div class="ri-socials">${OBS.socialChips()}</div>
+      ${minimal ? "" : `<div class="ri-div js-topic-wrap"${hide}></div>
+      <div class="ri-socials">${OBS.socialChips()}</div>`}
       <div class="ri-brand">
         <div class="brandmark">
-          <img src="assets/logo-dark.png" alt=""/>
-          <div class="wm"><b>${OBS.brand.brandName}</b><span>${OBS.brand.site}</span></div>
+          <img src="${OBS.logo}" alt=""/>
+          <div class="wm"><b>${OBS.esc(OBS.brand.brandName)}</b><span>${OBS.esc(OBS.brand.site)}</span></div>
         </div>
       </div>
     </div>`;
+}
+
+/* Rounded-rectangle sub-path for the rail backdrop cut-outs. */
+function holePath(x, y, w, h, r) {
+  return `M${x + r} ${y}h${w - 2 * r}a${r} ${r} 0 0 1 ${r} ${r}v${h - 2 * r}a${r} ${r} 0 0 1 -${r} ${r}` +
+         `h-${w - 2 * r}a${r} ${r} 0 0 1 -${r} -${r}v-${h - 2 * r}a${r} ${r} 0 0 1 ${r} -${r}z`;
 }
 
 /* reads ?track=, else polls a sibling now-playing.txt every 5s. Hides when
@@ -64,8 +70,12 @@ function setupNowPlaying() {
   const track = el.querySelector(".np-track");
   const set = (txt) => {
     txt = (txt || "").trim();
-    if (txt) { track.textContent = txt; el.style.display = ""; }
-    else { el.style.display = "none"; }
+    if (!txt) { el.style.display = "none"; return; }
+    if (track.textContent !== txt) {
+      track.textContent = txt;
+      el.classList.remove("swap"); void el.offsetWidth; el.classList.add("swap");   // short lift when the track changes
+    }
+    el.style.display = "";
   };
   if (OBS.isDemo) { set(OBS.q("track", "Tycho — Awake")); return { set, locked: true }; }
   const param = OBS.q("track", null);
@@ -108,8 +118,8 @@ function renderScene(cfg) {
 
   const brandSmall = `
     <div class="brandmark">
-      <img src="assets/logo-dark.png" alt="${brand.brandName}"/>
-      <div class="wm"><b>${brand.brandName}</b><span>${brand.tagline}</span></div>
+      <img src="${OBS.logo}" alt=""/>
+      <div class="wm"><b>${OBS.esc(brand.brandName)}</b><span>${OBS.esc(brand.tagline)}</span></div>
     </div>`;
 
   /* Topic pill always rendered (hidden when empty) so the live channel can
@@ -117,33 +127,33 @@ function renderScene(cfg) {
   const topicPill = `
     <div class="topic js-topic-wrap"${topic ? "" : ' style="display:none"'}>
       <span class="k">On screen</span><span class="div"></span>
-      <span class="v js-topic">${topic}</span>
+      <span class="v js-topic">${OBS.esc(topic)}</span>
     </div>`;
 
   const nameplate = `
     <div class="nameplate">
       <div class="bar"></div>
       <div class="np-body">
-        <span class="np-name">${cfg.name || brand.presenter.name}</span>
-        <span class="np-role">${cfg.role || brand.presenter.role}</span>
+        <span class="np-name">${OBS.esc(cfg.name || brand.presenter.name)}</span>
+        <span class="np-role">${OBS.esc(cfg.role || brand.presenter.role)}</span>
       </div>
     </div>`;
 
   const socialChips = `<div class="socials">${OBS.socialChips()}</div>`;
   const socialPills = `<div class="socials">${
     ["youtube","github","bluesky"].map((k)=>{
-      const h = OBS.handles[k]; const at = k==="github"||h.startsWith("@") ? "" : "@";
+      const h = OBS.esc(OBS.handles[k]); const at = k==="github"||h.startsWith("@") ? "" : "@";
       return `<div class="pill">${OBS.ICON[k]}<span>${at}${h}</span></div>`;
     }).join("")
   }</div>`;
 
   const camFrame = (pos) => `
     <div class="cam ${pos}">
-      <div class="cam-hole"></div>
+      <div class="cam-hole">${cfg.demo ? '<div class="cam-demo"></div>' : ""}</div>
       <div class="tick tl"></div><div class="tick tr"></div>
       <div class="cam-tab">
-        <img class="m" src="assets/logo-dark.png" alt=""/>
-        <b>${cfg.name || brand.presenter.name}</b><span>${brand.brandName}</span>
+        <img class="m" src="${OBS.logo}" alt=""/>
+        <b>${OBS.esc(cfg.name || brand.presenter.name)}</b><span>${OBS.esc(brand.brandName)}</span>
       </div>
     </div>`;
 
@@ -161,8 +171,8 @@ function renderScene(cfg) {
 
   const wordchip = `
     <div class="wordchip">
-      <img src="assets/logo-dark.png" alt=""/>
-      <b>${cfg.name || brand.brandName}</b><span>${brand.site}</span>
+      <img src="${OBS.logo}" alt=""/>
+      <b>${OBS.esc(cfg.name || brand.brandName)}</b><span>${OBS.esc(brand.site)}</span>
     </div>`;
 
   let html = "";
@@ -175,16 +185,22 @@ function renderScene(cfg) {
       ${cfg.demo ? '<div class="demo desk"></div>' : ""}
       <div class="mini tl">${topicPill}</div>
       <div class="mini bl">
-        <div class="wordchip"><img src="assets/logo-dark.png" alt=""/><b>${brand.brandName}</b><span>${brand.site}</span></div>
+        <div class="wordchip"><img src="${OBS.logo}" alt=""/><b>${OBS.esc(brand.brandName)}</b><span>${OBS.esc(brand.site)}</span></div>
       </div>
       ${showNow ? `<div class="mini br">${nowPlayingChip()}</div>` : ""}`;
   } else if (isShare && isRail) {
     /* ---------- OPTIMIZED RAIL SCREENSHARE ----------
        Recording keeps the screen + webcam frames and a minimal brand bar
        (no now-playing / status / clock / info card). */
+    /* An opaque backdrop with cut-outs for the screen and webcam regions, so
+       the gutters between the frames are branded instead of showing black
+       (or whatever sits underneath) in OBS. */
+    const holes = "M0 0h1920v1080h-1920z" + holePath(36, 84, 1392, 960, 14) +
+                  (cfg.cam ? holePath(1452, 801, 432, 243, 14) : "");
     html = `
-      <div class="brandbar">
-        <div class="bb-mark"><img src="assets/logo-dark.png" alt=""/><b>${brand.brandName}</b></div>
+      <div class="rail-backdrop" style="clip-path: path(evenodd, '${holes}')"></div>
+      <div class="brandbar solid">
+        <div class="bb-mark"><img src="${OBS.logo}" alt=""/><b>${OBS.esc(brand.brandName)}</b></div>
         ${topicPill}
         <div class="spacer"></div>
         ${showNow ? nowPlayingChip() : ""}
@@ -195,7 +211,7 @@ function renderScene(cfg) {
         ${cfg.demo ? deskInner : ""}
       </div>
       <div class="rail-col">
-        ${cfg.chat ? chatPanel() : (rec ? "" : railInfo(topic))}
+        ${cfg.chat ? chatPanel() : railInfo(topic, rec)}
         ${cfg.cam ? camFrame("") : ""}
       </div>`;
   } else if (isShare) {
@@ -203,7 +219,7 @@ function renderScene(cfg) {
     html = `
       ${cfg.demo ? `<div class="demo desk"><div class="win main">${deskInner}</div></div>` : ""}
       <div class="brandbar">
-        <div class="bb-mark"><img src="assets/logo-dark.png" alt=""/><b>${brand.brandName}</b></div>
+        <div class="bb-mark"><img src="${OBS.logo}" alt=""/><b>${OBS.esc(brand.brandName)}</b></div>
         ${topicPill}
         <div class="spacer"></div>
         ${showNow ? nowPlayingChip() : (live ? socialPills : "")}

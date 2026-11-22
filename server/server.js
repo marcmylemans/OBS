@@ -52,7 +52,9 @@ const DEFAULT_BRAND = {
   site: "mylemans.online",
   presenter: { name: "Marc Mylemans", role: "Systems Engineer · Mylemans Online" },
   handles: { youtube: "@mylemansonline", github: "mylemansonline", bluesky: "mylemans.online" },
-  accent: { from: "#2563eb", to: "#38bdf8" }
+  accent: { from: "#2563eb", to: "#38bdf8" },
+  logo: "assets/logo-mark.png",      // relative to /scenes/ (or an absolute URL)
+  chatSource: "YouTube"              // label on the live-chat frame
 };
 
 function deepMerge(base, over) {
@@ -103,7 +105,10 @@ function sse(event, data) {
     try { res.write(payload); } catch { /* dropped on next close */ }
   }
 }
-function broadcast() { sse("state", state); }
+/* `now` lets a scene on another machine correct for clock drift when it
+   turns the countdown target into local time. */
+function snapshot() { return { ...state, now: Date.now() }; }
+function broadcast() { sse("state", snapshot()); }
 /* One-shot commands for the music player (transport / volume). Scenes ignore
    these; only the player listens for the "command" event. */
 function broadcastCommand(cmd) { sse("command", cmd); }
@@ -127,7 +132,24 @@ async function updateState(patch) {
     if (v !== state.variant) { state.variant = v; changed = true; }
   }
   if (patch.countdown && typeof patch.countdown === "object") {
-    const c = { ...(state.countdown || {}), ...patch.countdown };
+    /* The server stamps an absolute end time (`target`, epoch ms) whenever a
+       minutes countdown is set, changed or explicitly restarted. Scenes count
+       down to that moment, so a source that loads or reconnects later shows
+       the time actually remaining instead of starting over. */
+    const prev = state.countdown || {};
+    const { restart, target: _ignored, ...rest } = patch.countdown;
+    const c = { mode: prev.mode, mins: prev.mins, until: prev.until, ...rest };
+    c.mode = c.mode === "until" ? "until" : "mins";
+    if (c.mode === "mins") {
+      c.mins = Math.min(180, Math.max(1, parseFloat(c.mins) || 10));
+      const same = prev.mode === "mins" && prev.mins === c.mins && prev.target;
+      c.target = same && !restart ? prev.target : Date.now() + c.mins * 60000;
+      delete c.until;
+    } else {
+      c.until = String(c.until || "");
+      delete c.mins;
+    }
+    for (const k of Object.keys(c)) if (c[k] === undefined) delete c[k];
     if (JSON.stringify(c) !== JSON.stringify(state.countdown)) { state.countdown = c; changed = true; }
   }
   if (typeof patch.track === "string" && patch.track.trim() !== state.track) {
@@ -207,12 +229,12 @@ app.get("/scenes/brand.js", (_req, res) => {
 /* ================================================================
    LIVE STATE ROUTES
    ================================================================ */
-app.get("/api/state", (_req, res) => res.json(state));
+app.get("/api/state", (_req, res) => res.json(snapshot()));
 
 app.post("/api/state", wrap(async (req, res) => {
   try {
     const changed = await updateState(req.body || {});
-    res.json({ ok: true, changed, state });
+    res.json({ ok: true, changed, state: snapshot() });
   } catch (err) {
     res.status(500).json({ ok: false, error: String(err) });
   }
@@ -228,7 +250,8 @@ app.get("/api/events", (req, res) => {
   });
   res.flushHeaders?.();
   res.write(`retry: 3000\n`);
-  res.write(`event: state\ndata: ${JSON.stringify(state)}\n\n`);
+  res.write(`event: state\ndata: ${JSON.stringify(snapshot())}\n\n`);
+  res.locals.role = req.query.role === "player" ? "player" : "scene";
   sseClients.add(res);
   const hb = setInterval(() => { try { res.write(": ping\n\n"); } catch {} }, 25000);
   req.on("close", () => { clearInterval(hb); sseClients.delete(res); });
@@ -336,7 +359,7 @@ app.get("/api/cmd/countdown", wrap(async (req, res) => {
   res.json({ ok: true, countdown: state.countdown, cdMins });
 }));
 app.get("/api/cmd/countdown/start", wrap(async (_req, res) => {
-  await updateState({ countdown: { mode: "mins", mins: cdMins } });
+  await updateState({ countdown: { mode: "mins", mins: cdMins, restart: true } });
   res.json({ ok: true, countdown: state.countdown });
 }));
 
@@ -362,7 +385,16 @@ app.use("/media", express.static(MUSIC_DIR, { acceptRanges: true, fallthrough: f
 app.use("/scenes", express.static(SCENES_DIR, { extensions: ["html"] }));
 app.use("/player", express.static(PLAYER_DIR, { extensions: ["html"] }));
 
-app.get("/healthz", (_req, res) => res.json({ ok: true, clients: sseClients.size, rev: state.rev }));
+/* `scenes` = open overlay sources (OBS browser sources, scene tabs);
+   `players` = open music-player tabs. Previews in the control room don't
+   hold a connection, so they aren't counted. */
+app.get("/healthz", (_req, res) => {
+  let players = 0;
+  for (const c of sseClients) if (c.locals.role === "player") players++;
+  res.json({ ok: true, clients: sseClients.size, scenes: sseClients.size - players, players, rev: state.rev });
+});
+
+app.get("/favicon.ico", (_req, res) => res.redirect("/scenes/assets/favicon.png"));
 
 /* Landing page → control room. */
 app.get("/", (_req, res) => res.redirect("/scenes/"));

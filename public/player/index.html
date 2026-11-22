@@ -3,52 +3,71 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Music Player — Mylemans Online OBS</title>
+<title>Music player — OBS Scene Pack</title>
+<link rel="icon" type="image/png" href="/scenes/assets/favicon.png"/>
 <link rel="stylesheet" href="player.css"/>
 </head>
 <body>
 <div class="app">
 
-  <!-- Top bar -->
   <header class="topbar">
-    <div class="brand">
-      <span class="logo">🎵</span>
-      <div class="brand-txt">
-        <b>Music Player</b>
-        <span>Mylemans Online · OBS Now Playing</span>
-      </div>
-    </div>
+    <a class="brand" href="/scenes/" title="Back to the control room">
+      <img id="brandLogo" src="/scenes/assets/logo-mark.png" alt="" width="40" height="40"/>
+      <span class="brand-txt">
+        <b>Music player</b>
+        <span>Sets “Now playing” on your stream</span>
+      </span>
+    </a>
+
     <div class="search">
-      <svg viewBox="0 0 24 24" class="search-ico"><path d="M21 21l-4.3-4.3M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <input id="search" type="text" placeholder="Search title, artist or album…" autocomplete="off"/>
+      <svg viewBox="0 0 24 24" class="search-ico" aria-hidden="true"><path d="M21 21l-4.3-4.3M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="search" type="search" placeholder="Search title, artist or album" autocomplete="off" aria-label="Search your music"/>
     </div>
+
     <div class="topbar-actions">
-      <span id="np-status" class="np-status off" title="now-playing.txt state">OBS: idle</span>
-      <button id="refresh" class="ghost-btn" title="Rescan music folder">Rescan</button>
-      <a class="ghost-btn" href="/scenes/" title="Back to the OBS control room">← Control room</a>
+      <span id="np-status" class="np-status off" role="status" title="What the Now playing chip shows on your streaming scenes">
+        <span class="np-eq" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span id="np-status-text">Nothing on stream</span>
+      </span>
+      <button id="refresh" class="btn" type="button" title="Look for new files in the music folder">Rescan</button>
+      <a class="btn" href="/scenes/">Control room</a>
     </div>
   </header>
 
-  <!-- Track library -->
-  <main class="library">
-    <div class="lib-head">
+  <main class="library" id="library">
+    <div class="lib-summary" id="summary" aria-live="polite"></div>
+    <div class="lib-head" aria-hidden="true">
       <span class="col-num">#</span>
       <span class="col-title">Title</span>
       <span class="col-album">Album</span>
-      <span class="col-dur">⏱</span>
+      <span class="col-dur">Length</span>
     </div>
-    <div id="tracklist" class="tracklist"></div>
-    <div id="empty" class="empty" hidden>
-      <h2>No music found</h2>
-      <p>Mount your music folder to the container at <code>/music</code> and click <b>Rescan</b>.</p>
-      <p class="dim">e.g. <code>docker run -v /path/to/music:/music ...</code></p>
+    <div id="tracklist" class="tracklist" role="list" aria-label="Tracks"></div>
+
+    <div id="loading" class="state">
+      <div class="skeleton" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <p>Reading your music folder…</p>
+    </div>
+    <div id="empty" class="state" hidden>
+      <h2>No music in the folder yet</h2>
+      <p>Mount a folder with mp3, flac, m4a, ogg or wav files at <code>/music</code>, then rescan.</p>
+      <p class="dim"><code>docker run -v /path/to/music:/music:ro …</code></p>
+      <button class="btn primary" type="button" id="emptyRescan">Rescan</button>
+    </div>
+    <div id="nomatch" class="state" hidden>
+      <h2>No tracks match “<span id="nomatchTerm"></span>”</h2>
+      <button class="btn" type="button" id="clearSearch">Clear search</button>
+    </div>
+    <div id="failed" class="state" hidden>
+      <h2>Couldn’t load the library</h2>
+      <p>The server didn’t answer. Check that the container is running, then try again.</p>
+      <button class="btn primary" type="button" id="retry">Try again</button>
     </div>
   </main>
 
-  <!-- Now-playing bar -->
   <footer class="nowbar">
     <div class="now-meta">
-      <div class="now-cover" id="now-cover"><span>♪</span></div>
+      <div class="now-cover" id="now-cover"><span aria-hidden="true">♪</span></div>
       <div class="now-text">
         <div class="now-title" id="now-title">Nothing playing</div>
         <div class="now-artist" id="now-artist">Pick a track to start</div>
@@ -57,38 +76,43 @@
 
     <div class="now-center">
       <div class="controls">
-        <button id="shuffle" class="ctl small" title="Shuffle">
-          <svg viewBox="0 0 24 24"><path d="M16 3h5v5M21 3l-7 7M16 21h5v-5M21 21l-7-7M3 8l4 4M3 16l11-11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <button id="shuffle" class="ctl small" type="button" aria-pressed="false" aria-label="Shuffle" title="Shuffle (S)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 3h5v5M21 3l-7 7M16 21h5v-5M21 21l-7-7M3 8l4 4M3 16l11-11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <button id="prev" class="ctl" title="Previous">
-          <svg viewBox="0 0 24 24"><path d="M6 5v14M20 5L9 12l11 7V5z" fill="currentColor"/></svg>
+        <button id="prev" class="ctl" type="button" aria-label="Previous track" title="Previous (←)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14M20 5L9 12l11 7V5z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>
         </button>
-        <button id="playpause" class="ctl play" title="Play / pause">
-          <svg id="ico-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8V4z" fill="currentColor"/></svg>
-          <svg id="ico-pause" viewBox="0 0 24 24" hidden><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>
+        <button id="playpause" class="ctl play" type="button" aria-label="Play" title="Play or pause (Space)">
+          <svg id="ico-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7V5z" fill="currentColor"/></svg>
+          <svg id="ico-pause" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>
         </button>
-        <button id="next" class="ctl" title="Next">
-          <svg viewBox="0 0 24 24"><path d="M18 5v14M4 5l11 7L4 19V5z" fill="currentColor"/></svg>
+        <button id="next" class="ctl" type="button" aria-label="Next track" title="Next (→)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 5v14M4 5l11 7L4 19V5z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>
         </button>
-        <button id="repeat" class="ctl small" title="Repeat">
-          <svg viewBox="0 0 24 24"><path d="M17 2l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <button id="repeat" class="ctl small" type="button" aria-pressed="false" aria-label="Repeat this track" title="Repeat this track (R)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </div>
       <div class="seek">
         <span class="t" id="cur">0:00</span>
-        <input id="seekbar" class="bar" type="range" min="0" max="1000" value="0"/>
+        <input id="seekbar" class="bar" type="range" min="0" max="1000" value="0" aria-label="Position in track" disabled/>
         <span class="t" id="dur">0:00</span>
       </div>
     </div>
 
     <div class="now-right">
-      <svg viewBox="0 0 24 24" class="vol-ico"><path d="M3 10v4h4l5 5V5L7 10H3zM16 8a5 5 0 0 1 0 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <input id="volume" class="bar vol" type="range" min="0" max="100" value="100"/>
+      <button id="mute" class="ctl small" type="button" aria-pressed="false" aria-label="Mute" title="Mute (M)">
+        <svg id="ico-vol" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4h4l5 5V5L7 10H3zM16 8a5 5 0 0 1 0 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg id="ico-muted" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M3 10v4h4l5 5V5L7 10H3zM16 9.5l5 5M21 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <input id="volume" class="bar vol" type="range" min="0" max="100" value="100" aria-label="Volume"/>
     </div>
   </footer>
 
+  <div class="notice" id="notice" role="alert" hidden></div>
   <audio id="audio" preload="metadata"></audio>
 </div>
+<script src="/scenes/brand.js"></script>
 <script src="player.js"></script>
 </body>
 </html>

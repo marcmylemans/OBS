@@ -102,7 +102,8 @@ test("health, config and scene pages are served", async () => {
   assert.equal((await (await fetch(base + "/healthz")).json()).ok, true);
   assert.equal(typeof (await (await fetch(base + "/api/config")).json()).brandName, "string");
   assert.match(await (await fetch(base + "/scenes/brand.js")).text(), /^window\.OBS_BRAND = /);
-  for (const page of ["/scenes/", "/scenes/Starting%20Soon.html", "/player/"]) {
+  for (const page of ["/scenes/", "/scenes/Starting%20Soon.html", "/player/", "/scenes/control.js",
+                      "/scenes/control.css", "/scenes/assets/logo-mark.png", "/scenes/assets/favicon.png"]) {
     assert.equal((await fetch(base + page)).status, 200, page);
   }
 });
@@ -154,12 +155,52 @@ test("malformed or hostile requests get an error response, not a crash", async (
 test("Stream Deck command endpoints update the live state", async () => {
   assert.equal((await (await fetch(base + "/api/cmd/topic?value=Proxmox%20100%25")).json()).topic, "Proxmox 100%");
   assert.equal((await (await fetch(base + "/api/cmd/variant?value=3")).json()).variant, 3);
-  assert.deepEqual(
-    (await (await fetch(base + "/api/cmd/countdown?mins=5")).json()).countdown,
-    { mode: "mins", mins: 5 }
-  );
+  const before = Date.now();
+  const cd = (await (await fetch(base + "/api/cmd/countdown?mins=5")).json()).countdown;
+  assert.deepEqual([cd.mode, cd.mins], ["mins", 5]);
+  assert.ok(Math.abs(cd.target - (before + 5 * 60000)) < 5000, "target is ~5 minutes from now");
   assert.equal((await fetch(base + "/api/cmd/player/bogus")).status, 400);
   const state = await (await fetch(base + "/api/state")).json();
   assert.deepEqual([state.topic, state.variant], ["Proxmox 100%", 3]);
   await assertAlive();
+});
+
+test("a pushed countdown keeps one end time until it is changed or restarted", async () => {
+  const post = async (countdown) => (await (await fetch(base + "/api/state", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ countdown })
+  })).json()).state;
+
+  const first = await post({ mode: "mins", mins: 12 });
+  assert.ok(first.now >= first.countdown.target - 12 * 60000, "state carries the server clock");
+  await new Promise((r) => setTimeout(r, 30));
+
+  /* Re-sending the same settings (as the control room does on every edit)
+     must not move the end time — late-joining scenes show what is left. */
+  const again = await post({ mode: "mins", mins: 12 });
+  assert.equal(again.countdown.target, first.countdown.target);
+
+  const restarted = await post({ mode: "mins", mins: 12, restart: true });
+  assert.ok(restarted.countdown.target > first.countdown.target);
+
+  const changed = await post({ mode: "mins", mins: 3 });
+  assert.ok(changed.countdown.target < restarted.countdown.target);
+
+  const until = await post({ mode: "until", until: "20:30" });
+  assert.deepEqual(until.countdown, { mode: "until", until: "20:30" });
+});
+
+test("healthz counts scene sources and player tabs separately", async () => {
+  const open = async (url) => {
+    const ac = new AbortController();
+    const r = await fetch(base + url, { signal: ac.signal });
+    await r.body.getReader().read();          // first chunk = connection registered
+    return ac;
+  };
+  const before = await (await fetch(base + "/healthz")).json();
+  const scene = await open("/api/events");
+  const player = await open("/api/events?role=player");
+  const during = await (await fetch(base + "/healthz")).json();
+  assert.equal(during.scenes, before.scenes + 1);
+  assert.equal(during.players, before.players + 1);
+  scene.abort(); player.abort();
 });

@@ -15,5 +15,7 @@
   "accent": {
     "from": "#2563eb",
     "to": "#38bdf8"
-  }
+  },
+  "logo": "assets/logo-mark.png",
+  "chatSource": "YouTube"
 }

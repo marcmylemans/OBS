@@ -42,7 +42,7 @@
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 14px 34px rgba(2,6,23,0.45);
 }
-.wordchip img { height: 30px; }
+.wordchip img { height: 28px; }
 .wordchip b { font-size: 20px; font-weight: 700; color: var(--white); }
 .wordchip span { font-size: 16px; color: var(--muted); }
 
@@ -109,3 +109,25 @@
 .statusmini b { font-size: 16px; font-weight: 800; letter-spacing: 0.14em; color: var(--text); }
 .statusmini .div { width: 1px; height: 17px; background: var(--border-strong); }
 .statusmini .t { font-size: 18px; font-weight: 600; color: var(--text); }
+
+/* ---------- RAIL BACKDROP ----------
+   Opaque brand backdrop behind the rail layout. scenes.js clips out the
+   screen and webcam regions, so only those two areas are see-through. */
+.rail-backdrop {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 12% -10%, rgba(37,99,235,0.22), transparent 46%),
+    radial-gradient(circle at 96% 108%, rgba(56,189,248,0.12), transparent 42%),
+    var(--navy-950);
+}
+/* the bar sits on the backdrop here, so it needs no scrim of its own */
+.brandbar.solid { background: none; height: 84px; }
+.brandbar.solid .topic { background: rgba(15,23,42,0.7); }
+
+/* recording rail: no card, just the topic and a quiet brand sign-off */
+.rail-info.minimal {
+  background: none; border: 0; box-shadow: none;
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+  padding: 22px 6px 26px;
+}
+.rail-info.minimal .ri-topic .v { font-size: 30px; }
