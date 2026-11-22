@@ -45,9 +45,8 @@
 .v2 .subtext { font-size: 30px; }
 .v2 .sb .bottom { position: absolute; left: 90px; bottom: 72px; }
 .v2 .watermark {
-  position: absolute; right: -120px; top: 50%; transform: translateY(-50%);
-  width: 760px; height: 760px; opacity: 0.06; pointer-events: none;
-  filter: grayscale(0.2);
+  position: absolute; right: 70px; top: 50%; transform: translateY(-50%);
+  width: 560px; height: 560px; opacity: 0.05; pointer-events: none;
 }
 .v2 .watermark img { width: 100%; height: 100%; object-fit: contain; }
 
@@ -78,3 +77,8 @@
 .v3 .subtext { font-size: 27px; }
 .v3 .card .divider { width: 100%; height: 1px; background: var(--border); margin: 6px 0 2px; }
 .v3 .card .socials { position: relative; }
+
+/* ---------------- Call to action (Ending Stream) ---------------- */
+.v1 .cta-site { font-size: 96px; }
+.v2 .cta-site { font-size: 108px; }
+.v3 .cta-site { font-size: 84px; }

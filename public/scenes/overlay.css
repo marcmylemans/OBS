@@ -266,7 +266,7 @@ html, body {
   border-top-right-radius: 12px;
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
 }
-.cam .cam-tab .m { width: 22px; height: 22px; }
+.cam .cam-tab .m { width: 24px; height: 24px; }
 .cam .cam-tab b { font-size: 18px; font-weight: 700; color: var(--white); }
 .cam .cam-tab span { font-size: 15px; color: var(--muted); }
 /* corner ticks */
@@ -284,7 +284,7 @@ html, body {
   background: linear-gradient(to bottom, rgba(2,6,23,0.92), rgba(2,6,23,0.0));
 }
 .brandbar .bb-mark { display: flex; align-items: center; gap: 12px; }
-.brandbar .bb-mark img { height: 40px; }
+.brandbar .bb-mark img { height: 36px; }
 .brandbar .bb-mark b { font-size: 21px; font-weight: 700; color: var(--white); }
 .brandbar .spacer { flex: 1; }
 .brandbar .pill {
@@ -423,3 +423,30 @@ html, body {
   opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 50;
 }
 body:hover .confighint { opacity: 1; }
+
+/* ======================================================
+   LIVE-CHANGE FEEDBACK
+   A pushed topic or a new track gets one short lift so viewers register
+   that something changed. Nothing else on the overlays animates on its own.
+   ====================================================== */
+@keyframes swap-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+.js-topic.swap { display: inline-block; animation: swap-in 0.35s ease-out; }
+.nowplaying.swap .np-track { animation: swap-in 0.35s ease-out; }
+
+/* Call to action that takes the countdown's place on scenes without one */
+.cta-site {
+  font-weight: 700; letter-spacing: -0.02em; line-height: 1.05;
+  background: var(--grad-primary); -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+}
+
+/* Stand-in camera picture for previews (?demo=1); never rendered in OBS */
+.cam-demo {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 34% 62% at 50% 108%, rgba(2,6,23,0.9) 0 98%, transparent 100%),
+    radial-gradient(circle at 50% 38%, #20406b, #0c1c33 62%, #060f1e);
+}

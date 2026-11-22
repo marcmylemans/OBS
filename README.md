@@ -21,7 +21,10 @@ music files.
 **Recording** — Just Chatting · Screensharing + Webcam · Screensharing (no webcam)
 
 All scenes are transparent browser sources (standby scenes are full-screen). They
-self-scale from 1920×1080 to any canvas size, so they stay crisp at 1080p or 4K.
+are designed on a 1920×1080 grid and self-scale to the size of the browser
+source, so they stay crisp at 1080p, 1440p or 4K: set the source to your canvas
+size (for 4K, **3840×2160**). Everything is vector apart from the logo mark,
+which ships at 720 px.
 
 ## Quick start (Docker)
 
@@ -88,17 +91,25 @@ reused across runs.
 ## Using the scenes in OBS
 
 1. Open the **control room** at `http://localhost:8080/scenes/`.
-2. Set your countdown (minutes or a target time), on-screen topic, and standby
-   layout (01/02/03). Previews update live.
+2. Set your topic, countdown (minutes or a target time) and standby layout
+   (centered / left / card). Previews update as you type, and the settings are
+   remembered in that browser.
 3. Hit **Copy URL** on any scene card — it copies the **full absolute URL**
    with your settings baked in, e.g.
-   `http://localhost:8080/scenes/Starting%20Soon.html?mins=10`.
-4. In OBS, add a **Browser** source, paste that URL, set **1920×1080**.
+   `http://localhost:8080/scenes/Starting%20Soon.html?v=1&mins=10`.
+4. In OBS, add a **Browser** source, paste that URL and set it to your canvas
+   size (**1920×1080**, or **3840×2160** for 4K).
    - For countdown scenes, tick *Refresh browser when scene becomes active* so
      the timer restarts each time.
 
-Placement coordinates for webcam / chat / screen-capture regions are documented
-right inside the control room's setup section.
+The control room's **Set up in OBS** section has a placement table for your own
+sources (camera, screen capture, chat widget). Pick your canvas size there and
+the pixel positions are recalculated for it. The status pill in the header shows
+how many scene sources are currently open in OBS.
+
+The two *Screensharing + Webcam* scenes draw an opaque brand backdrop with
+cut-outs for the screen and camera, so the gutters around your capture are
+branded rather than black.
 
 ### Live push (no URL re-copy)
 
@@ -108,8 +119,12 @@ to OBS** to **On** in the control room and your changes stream to every already-
 scene source instantly over Server-Sent Events:
 
 - **Topic** lower-third — update or clear it live on the capture scenes.
-- **Standby layout** (01/02/03) — switch centered/editorial/panel live.
-- **Countdown** — reset to N minutes or a target time without refreshing.
+- **Standby layout** — switch centered / left / card live. The `?v=` in a
+  copied URL is only the layout a source starts with.
+- **Countdown** — set N minutes or a target time without refreshing. The server
+  stores the *end time*, so every standby scene counts down to the same moment
+  and a source that loads later shows the time actually left. **Restart** starts
+  it again from the top.
 - **Now playing** is pushed by the music player on the same channel (instant, no
   5s poll).
 
@@ -119,7 +134,9 @@ by live pushes, so you can pin a topic on one source while steering the rest.
 ### Branding & theming
 
 Brand details live in **`config.json`** (no code edits): presenter name/role,
-social handles, brand name/taglines, and the accent gradient. The server injects
+social handles, brand name/taglines, the accent gradient, the `logo` (a path
+relative to `/scenes/` or a full URL; use a version that reads on a dark
+background) and `chatSource` (the label on the chat frame). The server injects
 them into every scene, and the accent colors re-theme the overlays. Edit the file
 and refresh — no rebuild needed (mount it into the container to override, per
 `docker-compose.yml`). Per-scene URL overrides (`?yt= &gh= &bs=`) still win.
@@ -129,9 +146,13 @@ and refresh — no rebuild needed (mount it into the container to override, per
   "brandName": "Mylemans Online",
   "presenter": { "name": "Marc Mylemans", "role": "Systems Engineer · Mylemans Online" },
   "handles": { "youtube": "@mylemansonline", "github": "mylemansonline", "bluesky": "mylemans.online" },
-  "accent": { "from": "#2563eb", "to": "#38bdf8" }
+  "accent": { "from": "#2563eb", "to": "#38bdf8" },
+  "logo": "assets/logo-mark.png",
+  "chatSource": "YouTube"
 }
 ```
+
+The accent also themes the control room and the music player.
 
 ### Configurable URL parameters
 
@@ -139,7 +160,7 @@ and refresh — no rebuild needed (mount it into the container to override, per
 | --- | --- | --- |
 | `?mins=10` | standby | Countdown of N minutes (persists across source refresh) |
 | `?until=20:30` | standby | Countdown to a wall-clock time |
-| `?v=1\|2\|3` | standby | Standby layout (centered / editorial / panel) |
+| `?v=1\|2\|3` | standby | Starting layout (centered / left / card); a live push can still switch it |
 | `?topic=...` | capture | On-screen topic lower-third |
 | `?track=Artist - Title` | capture | Fixed Now Playing label (overrides the file) |
 | `?yt= &gh= &bs=` | all | Override social handles |
@@ -158,8 +179,11 @@ isn't available.)
 - **Map your music:** mount any folder to `/music` in the container (see the
   volume in `docker-compose.yml`). Nested subfolders are scanned recursively.
 - **Supported formats:** mp3, m4a/aac, flac, ogg/opus, wav, webm.
-- Embedded album art is shown in the player; the `OBS: …` badge in the top-right
-  reflects exactly what's written to `now-playing.txt`.
+- Embedded album art is shown in the player; the **On stream** pill in the
+  top-right reflects exactly what's written to `now-playing.txt`.
+- Closing the player tab clears the chip, so a stale title never stays on stream.
+- Keyboard: `Space` play/pause, `←` / `→` previous/next, `M` mute, `S` shuffle,
+  `R` repeat, `/` search. Hardware media keys work too.
 
 Any external tool (Spotify/foobar2000/Snip, OBS "Output current song") can write
 that same file instead — the player is just the bundled, no-config option.
@@ -198,7 +222,7 @@ script are included too.
 | `GET /api/events` | Server-Sent Events stream the scenes subscribe to |
 | `GET /api/config` · `GET /scenes/brand.js` | Brand/theme config (JSON / injected JS) |
 | `GET /api/cmd/...` | Stream Deck command shortcuts (topic, variant, countdown, player) — see [`streamdeck/`](streamdeck/README.md) |
-| `GET /healthz` | Health + connected-scene count |
+| `GET /healthz` | Health + how many scene sources (`scenes`) and player tabs (`players`) are connected |
 
 ---
 
