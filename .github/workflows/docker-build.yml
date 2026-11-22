@@ -10,6 +10,7 @@ on:
       - "package-lock.json"
       - "server/**"
       - "public/**"
+      - "test/**"
       - ".github/workflows/docker-build.yml"
   pull_request:
     paths:
@@ -18,6 +19,7 @@ on:
       - "package-lock.json"
       - "server/**"
       - "public/**"
+      - "test/**"
       - ".github/workflows/docker-build.yml"
   workflow_dispatch:
 
@@ -26,7 +28,29 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  # Smoke tests must pass before an image is built or published.
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read

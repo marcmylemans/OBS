@@ -37,6 +37,11 @@ const AUDIO_EXT = new Set([".mp3", ".m4a", ".aac", ".flac", ".ogg", ".oga", ".op
 const app = express();
 app.use(express.json());
 
+/* Express 4 does not catch rejected promises from async handlers; an uncaught
+   one would take the whole process down. Wrap every async route so errors
+   reach the error middleware at the bottom of this file instead. */
+const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+
 /* ================================================================
    BRAND CONFIG
    ================================================================ */
@@ -152,9 +157,12 @@ function withTimeout(promise, ms, fallback) {
   return Promise.race([promise.then((v) => { clearTimeout(t); return v; }, () => { clearTimeout(t); return fallback; }), timeout]);
 }
 
+/* `rel` arrives already URL-decoded by Express (req.query), so it must NOT be
+   decoded again: a second decodeURIComponent throws on any filename that
+   contains a literal "%" (e.g. "100% Mix.mp3"). */
 function safeMusicPath(rel) {
-  const decoded = decodeURIComponent(rel || "");
-  const full = path.resolve(MUSIC_DIR, decoded);
+  if (typeof rel !== "string" || !rel || rel.includes("\0")) return null;
+  const full = path.resolve(MUSIC_DIR, rel);
   if (full !== MUSIC_DIR && !full.startsWith(MUSIC_DIR + path.sep)) return null;
   return full;
 }
@@ -201,14 +209,14 @@ app.get("/scenes/brand.js", (_req, res) => {
    ================================================================ */
 app.get("/api/state", (_req, res) => res.json(state));
 
-app.post("/api/state", async (req, res) => {
+app.post("/api/state", wrap(async (req, res) => {
   try {
     const changed = await updateState(req.body || {});
     res.json({ ok: true, changed, state });
   } catch (err) {
     res.status(500).json({ ok: false, error: String(err) });
   }
-});
+}));
 
 /* Server-Sent Events stream: scenes subscribe to receive live state. */
 app.get("/api/events", (req, res) => {
@@ -229,7 +237,7 @@ app.get("/api/events", (req, res) => {
 /* ================================================================
    MUSIC API
    ================================================================ */
-app.get("/api/tracks", async (_req, res) => {
+app.get("/api/tracks", wrap(async (_req, res) => {
   const rels = await walkMusic();
   rels.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
   const tracks = await Promise.all(
@@ -261,9 +269,9 @@ app.get("/api/tracks", async (_req, res) => {
     })
   );
   res.json({ musicDir: MUSIC_DIR, count: tracks.length, tracks });
-});
+}));
 
-app.get("/api/cover", async (req, res) => {
+app.get("/api/cover", wrap(async (req, res) => {
   const full = safeMusicPath(req.query.path);
   if (!full || !fs.existsSync(full)) return res.sendStatus(404);
   try {
@@ -276,12 +284,12 @@ app.get("/api/cover", async (req, res) => {
   } catch {
     res.sendStatus(404);
   }
-});
+}));
 
 /* now-playing.txt convenience endpoints (kept for compatibility). */
 app.get("/api/now-playing", (_req, res) => res.json({ text: state.track }));
 
-app.post("/api/now-playing", async (req, res) => {
+app.post("/api/now-playing", wrap(async (req, res) => {
   const text = typeof req.body?.text === "string" ? req.body.text : "";
   try {
     await updateState({ track: text });
@@ -289,7 +297,7 @@ app.post("/api/now-playing", async (req, res) => {
   } catch (err) {
     res.status(500).json({ ok: false, error: String(err) });
   }
-});
+}));
 
 /* ================================================================
    STREAM DECK COMMAND ENDPOINTS  (simple GET — easy to bind from
@@ -298,15 +306,15 @@ app.post("/api/now-playing", async (req, res) => {
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 
 /* --- overlay (pushed to scenes via live state) --- */
-app.get("/api/cmd/topic", async (req, res) => {
+app.get("/api/cmd/topic", wrap(async (req, res) => {
   await updateState({ topic: typeof req.query.value === "string" ? req.query.value : "" });
   res.json({ ok: true, topic: state.topic });
-});
-app.get("/api/cmd/topic/clear", async (_req, res) => {
+}));
+app.get("/api/cmd/topic/clear", wrap(async (_req, res) => {
   await updateState({ topic: "" });
   res.json({ ok: true, topic: state.topic });
-});
-app.get("/api/cmd/variant", async (req, res) => {
+}));
+app.get("/api/cmd/variant", wrap(async (req, res) => {
   let v;
   if (req.query.value != null) {
     v = clamp(parseInt(req.query.value, 10) || 1, 1, 3);
@@ -316,8 +324,8 @@ app.get("/api/cmd/variant", async (req, res) => {
   }
   await updateState({ variant: v });
   res.json({ ok: true, variant: state.variant });
-});
-app.get("/api/cmd/countdown", async (req, res) => {
+}));
+app.get("/api/cmd/countdown", wrap(async (req, res) => {
   if (req.query.until) {
     await updateState({ countdown: { mode: "until", until: String(req.query.until) } });
   } else {
@@ -326,11 +334,11 @@ app.get("/api/cmd/countdown", async (req, res) => {
     await updateState({ countdown: { mode: "mins", mins: cdMins } });   // live reset for instant feedback
   }
   res.json({ ok: true, countdown: state.countdown, cdMins });
-});
-app.get("/api/cmd/countdown/start", async (_req, res) => {
+}));
+app.get("/api/cmd/countdown/start", wrap(async (_req, res) => {
   await updateState({ countdown: { mode: "mins", mins: cdMins } });
   res.json({ ok: true, countdown: state.countdown });
-});
+}));
 
 /* --- music player remote (broadcast as a one-shot command) --- */
 app.get("/api/cmd/player/:action", (req, res) => {
@@ -358,6 +366,15 @@ app.get("/healthz", (_req, res) => res.json({ ok: true, clients: sseClients.size
 
 /* Landing page → control room. */
 app.get("/", (_req, res) => res.redirect("/scenes/"));
+
+/* Last-resort error handler: a bad request must never crash the server
+   mid-stream. Client errors (malformed URL/JSON) keep their 4xx status. */
+app.use((err, req, res, _next) => {
+  const status = err.status >= 400 && err.status < 500 ? err.status : (err instanceof URIError ? 400 : 500);
+  if (status >= 500) console.error(`[error] ${req.method} ${req.originalUrl}:`, err);
+  if (res.headersSent) return res.end();
+  res.status(status).json({ ok: false, error: status >= 500 ? "internal error" : "bad request" });
+});
 
 app.listen(PORT, () => {
   console.log(`OBS Scene Pack server running on http://localhost:${PORT}`);

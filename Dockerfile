@@ -5,7 +5,7 @@
 # Our dependencies (express, music-metadata) are pure JS with no native
 # addons, so the installed tree is arch-independent. Pinning this stage to
 # $BUILDPLATFORM avoids running npm under slow QEMU emulation for arm64.
-FROM --platform=$BUILDPLATFORM node:20-alpine AS deps
+FROM --platform=$BUILDPLATFORM node:24-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 # BuildKit cache mount keeps the npm cache warm across builds.
@@ -13,7 +13,7 @@ RUN --mount=type=cache,target=/root/.npm \
     npm ci --omit=dev
 
 # ---- runner: final per-architecture image ----
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
     PORT=8080 \
