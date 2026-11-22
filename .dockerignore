@@ -6,3 +6,6 @@ music
 *.md
 !public/**/*.md
 .DS_Store
+test
+.github
+streamdeck

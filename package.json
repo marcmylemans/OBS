@@ -5,13 +5,14 @@
   "type": "module",
   "main": "server/server.js",
   "scripts": {
-    "start": "node server/server.js"
+    "start": "node server/server.js",
+    "test": "node --test"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "music-metadata": "^10.6.0"
+    "express": "^4.22.3",
+    "music-metadata": "^12.8.0"
   }
 }

@@ -44,12 +44,25 @@ docker build -t mylemans-obs-scenes .
 docker run -d -p 8080:8080 -v /path/to/your/music:/music:ro mylemans-obs-scenes
 ```
 
-Run locally without Docker:
+Run locally without Docker (needs **Node.js 22 or newer**; the image ships
+Node 24 LTS):
 
 ```bash
 npm install
 MUSIC_DIR=/path/to/your/music npm start
 ```
+
+### Tests
+
+```bash
+npm test
+```
+
+Smoke tests (Node's built-in test runner, no extra dependencies) start the real
+server against a throwaway music folder and check the scene pages, the library
+scan, cover art, the Stream Deck command endpoints, and that malformed requests
+or filenames containing `%` return an error instead of crashing the server. The
+same tests run in GitHub Actions before the image is built.
 
 ### Pre-built image (GitHub Container Registry)
 
